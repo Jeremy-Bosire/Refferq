@@ -1,4 +1,5 @@
 // Real-time notification system for the affiliate platform
+import { formatMoney } from './currency';
 export interface NotificationData {
   id: string;
   type: 'referral_submitted' | 'referral_approved' | 'referral_rejected' | 'commission_approved' | 'payout_processed' | 'affiliate_registered';
@@ -97,7 +98,7 @@ class NotificationService {
     await this.createNotification({
       type: 'referral_approved',
       title: 'Referral Approved!',
-      message: `Your referral for ${referralData.leadName} has been approved. Commission: $${(referralData.commissionAmount / 100).toFixed(2)}`,
+      message: `Your referral for ${referralData.leadName} has been approved. Commission: ${formatMoney(referralData.commissionAmount)}`,
       userId: affiliateId,
       metadata: referralData,
     });
@@ -117,7 +118,7 @@ class NotificationService {
     await this.createNotification({
       type: 'commission_approved',
       title: 'Commission Approved!',
-      message: `Commission of $${(commissionData.amount / 100).toFixed(2)} for ${commissionData.referralName} has been approved`,
+      message: `Commission of ${formatMoney(commissionData.amount)} for ${commissionData.referralName} has been approved`,
       userId: affiliateId,
       metadata: commissionData,
     });
@@ -127,7 +128,7 @@ class NotificationService {
     await this.createNotification({
       type: 'payout_processed',
       title: 'Payout Processed',
-      message: `Your payout of $${(payoutData.amount / 100).toFixed(2)} via ${payoutData.method} has been processed`,
+      message: `Your payout of ${formatMoney(payoutData.amount)} via ${payoutData.method} has been processed`,
       userId: affiliateId,
       metadata: payoutData,
     });

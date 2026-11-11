@@ -19,8 +19,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  FileText, Plus, Eye, IndianRupee, CheckCircle2, Clock, AlertCircle, Trash2,
+  FileText, Plus, Eye, Banknote, CheckCircle2, Clock, AlertCircle, Trash2,
 } from 'lucide-react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
+import { useI18n } from '@/i18n/provider';
 
 interface Invoice {
   id: string;
@@ -41,6 +44,7 @@ interface Invoice {
 }
 
 export default function InvoicesPage() {
+  const { t } = useI18n();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -104,24 +108,23 @@ export default function InvoicesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this invoice?')) return;
+    if (!confirm(t('confirmDeleteInvoice'))) return;
     try {
       const res = await fetch(`/api/admin/invoices?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         await fetchInvoices();
       } else {
-        alert(data.error || 'Failed to delete invoice');
+        alert(t('deleteInvoiceFailed'));
       }
     } catch (error) {
       console.error('Failed to delete invoice:', error);
     }
   };
 
-  const formatCurrency = (cents: number) =>
-    `\u20B9${(cents / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatCurrency = formatMoney;
 
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const formatDate = formatDateEAT;
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
@@ -135,7 +138,17 @@ export default function InvoicesPage() {
     return (
       <Badge variant={variant} className="gap-1 text-xs">
         <Icon className="h-3 w-3" />
-        {status}
+        {status === 'PAID'
+          ? t('paid')
+          : status === 'ISSUED'
+            ? t('issued')
+            : status === 'DRAFT'
+              ? t('draft')
+              : status === 'OVERDUE'
+                ? t('overdue')
+                : status === 'CANCELLED'
+                  ? t('cancelled')
+                  : status}
       </Badge>
     );
   };
@@ -161,41 +174,41 @@ export default function InvoicesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
-          <p className="text-muted-foreground">Generate and manage payout invoices</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('invoices')}</h1>
+          <p className="text-muted-foreground">{t('invoicesDescription')}</p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Invoice
+          {t('createInvoice')}
         </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalInvoices')}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.total}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Paid</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('paid')}</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.paid}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('outstanding')}</CardTitle>
             <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{formatCurrency(stats.outstanding)}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
-            <IndianRupee className="h-4 w-4 text-emerald-500" />
+            <CardTitle className="text-sm font-medium">{t('totalPaid')}</CardTitle>
+            <Banknote className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div></CardContent>
         </Card>
@@ -203,29 +216,29 @@ export default function InvoicesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Invoices</CardTitle>
-          <CardDescription>Track and manage affiliate payout invoices</CardDescription>
+          <CardTitle>{t('allInvoices')}</CardTitle>
+          <CardDescription>{t('trackPayoutInvoices')}</CardDescription>
         </CardHeader>
         <CardContent>
           {invoices.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FileText className="h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-semibold">No invoices yet</h3>
-              <p className="text-sm text-muted-foreground">Create your first payout invoice</p>
+              <h3 className="mt-4 text-lg font-semibold">{t('noInvoicesYet')}</h3>
+              <p className="text-sm text-muted-foreground">{t('createFirstInvoice')}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Affiliate</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Tax</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Issued</TableHead>
-                  <TableHead>Due</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('invoiceNumber')}</TableHead>
+                  <TableHead>{t('affiliate')}</TableHead>
+                  <TableHead>{t('amount')}</TableHead>
+                  <TableHead>{t('tax')}</TableHead>
+                  <TableHead>{t('total')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('issued')}</TableHead>
+                  <TableHead>{t('due')}</TableHead>
+                  <TableHead className="text-right">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -246,7 +259,7 @@ export default function InvoicesPage() {
                         </Button>
                         {inv.status === 'ISSUED' && (
                           <Button variant="ghost" size="sm" onClick={() => updateStatus(inv.id, 'PAID')}>
-                            Mark Paid
+                            {t('markPaid')}
                           </Button>
                         )}
                         {inv.status !== 'PAID' && (
@@ -268,38 +281,38 @@ export default function InvoicesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Invoice</DialogTitle>
-            <DialogDescription>Generate a new payout invoice for an affiliate</DialogDescription>
+            <DialogTitle>{t('createInvoice')}</DialogTitle>
+            <DialogDescription>{t('createInvoiceForAffiliate')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Affiliate ID *</Label>
-              <Input value={form.affiliateId} onChange={e => setForm({...form, affiliateId: e.target.value})} placeholder="Affiliate ID" />
+              <Label>{t('affiliateId')} *</Label>
+              <Input value={form.affiliateId} onChange={e => setForm({...form, affiliateId: e.target.value})} placeholder={t('affiliateId')} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Amount (cents) *</Label>
+                <Label>{t('amountMinorUnits')} *</Label>
                 <Input type="number" value={form.amountCents} onChange={e => setForm({...form, amountCents: e.target.value})} placeholder="100000" />
-                <p className="text-xs text-muted-foreground">100000 = ₹1,000</p>
+                <p className="text-xs text-muted-foreground">{t('minorUnitExample')}</p>
               </div>
               <div className="grid gap-2">
-                <Label>Tax (cents)</Label>
+                <Label>{t('taxMinorUnits')}</Label>
                 <Input type="number" value={form.taxCents} onChange={e => setForm({...form, taxCents: e.target.value})} placeholder="0" />
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Due Date</Label>
+              <Label>{t('dueDate')}</Label>
               <Input type="date" value={form.dueAt} onChange={e => setForm({...form, dueAt: e.target.value})} />
             </div>
             <div className="grid gap-2">
-              <Label>Notes</Label>
-              <Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Optional notes" />
+              <Label>{t('notes')}</Label>
+              <Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder={t('optionalNotes')} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('cancel')}</Button>
             <Button onClick={handleCreate} disabled={saving || !form.affiliateId || !form.amountCents}>
-              {saving ? 'Creating...' : 'Create Invoice'}
+              {saving ? t('creating') : t('createInvoice')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -309,39 +322,39 @@ export default function InvoicesPage() {
       <Dialog open={!!viewInvoice} onOpenChange={() => setViewInvoice(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Invoice {viewInvoice?.invoiceNumber}</DialogTitle>
+            <DialogTitle>{t('invoice')} {viewInvoice?.invoiceNumber}</DialogTitle>
           </DialogHeader>
           {viewInvoice && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Status</p>
+                  <p className="text-muted-foreground">{t('status')}</p>
                   <div className="mt-1">{getStatusBadge(viewInvoice.status)}</div>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Affiliate</p>
+                  <p className="text-muted-foreground">{t('affiliate')}</p>
                   <p className="font-mono mt-1">{viewInvoice.affiliateId}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Amount</p>
+                  <p className="text-muted-foreground">{t('amount')}</p>
                   <p className="font-semibold mt-1">{formatCurrency(viewInvoice.amountCents)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Tax</p>
+                  <p className="text-muted-foreground">{t('tax')}</p>
                   <p className="mt-1">{formatCurrency(viewInvoice.taxCents)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Total</p>
+                  <p className="text-muted-foreground">{t('total')}</p>
                   <p className="font-bold text-lg mt-1">{formatCurrency(viewInvoice.totalCents)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Due Date</p>
+                  <p className="text-muted-foreground">{t('dueDate')}</p>
                   <p className="mt-1">{viewInvoice.dueAt ? formatDate(viewInvoice.dueAt) : '—'}</p>
                 </div>
               </div>
               {viewInvoice.notes && (
                 <div>
-                  <p className="text-muted-foreground text-sm">Notes</p>
+                  <p className="text-muted-foreground text-sm">{t('notes')}</p>
                   <p className="text-sm mt-1">{viewInvoice.notes}</p>
                 </div>
               )}

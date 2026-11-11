@@ -29,6 +29,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useI18n } from '@/i18n/provider';
+import { BRAND_NAME } from '@/lib/brand';
+import type { MessageKey } from '@/i18n/messages';
 import {
   LayoutDashboard,
   Users,
@@ -50,21 +54,22 @@ interface BrandSettings {
 }
 
 const mainNavItems = [
-  { title: 'Dashboard', url: '/affiliate', icon: LayoutDashboard },
-  { title: 'Referrals', url: '/affiliate/referrals', icon: Users },
-  { title: 'Payouts', url: '/affiliate/payouts', icon: Wallet },
-  { title: 'Resources', url: '/affiliate/resources', icon: BookOpen },
-  { title: 'Reports', url: '/affiliate/reports', icon: BarChart3, badge: 'BETA' },
+  { titleKey: 'dashboard', url: '/affiliate', icon: LayoutDashboard },
+  { titleKey: 'referrals', url: '/affiliate/referrals', icon: Users },
+  { titleKey: 'payouts', url: '/affiliate/payouts', icon: Wallet },
+  { titleKey: 'resources', url: '/affiliate/resources', icon: BookOpen },
+  { titleKey: 'reports', url: '/affiliate/reports', icon: BarChart3, badge: 'BETA' },
 ];
 
 const accountNavItems = [
-  { title: 'Settings', url: '/affiliate/settings', icon: Settings },
+  { titleKey: 'settings', url: '/affiliate/settings', icon: Settings },
 ];
 
 function AffiliateSidebar({ brand }: { brand: BrandSettings }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { t } = useI18n();
 
   const isActive = (url: string) => {
     if (url === '/affiliate') return pathname === '/affiliate';
@@ -72,7 +77,7 @@ function AffiliateSidebar({ brand }: { brand: BrandSettings }) {
   };
 
   const accentColor = brand.brandButtonColor || '#059669';
-  const brandName = brand.companyName || 'Refferq';
+  const brandName = brand.companyName || BRAND_NAME;
 
   return (
     <Sidebar variant="inset">
@@ -89,7 +94,7 @@ function AffiliateSidebar({ brand }: { brand: BrandSettings }) {
               )}
               <div className="flex flex-col">
                 <span className="text-sm font-bold">{brandName}</span>
-                <span className="text-xs text-muted-foreground">Affiliate Portal</span>
+                <span className="text-xs text-muted-foreground">{t('affiliatePortal')}</span>
               </div>
             </div>
           </SidebarMenuItem>
@@ -98,18 +103,18 @@ function AffiliateSidebar({ brand }: { brand: BrandSettings }) {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('mainMenu')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     isActive={isActive(item.url)}
                     onClick={() => router.push(item.url)}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey as MessageKey)}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span>{t(item.titleKey as MessageKey)}</span>
                     {item.badge && (
                       <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                         {item.badge}
@@ -123,18 +128,18 @@ function AffiliateSidebar({ brand }: { brand: BrandSettings }) {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('account')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {accountNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     isActive={isActive(item.url)}
                     onClick={() => router.push(item.url)}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey as MessageKey)}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span>{t(item.titleKey as MessageKey)}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -172,12 +177,12 @@ function AffiliateSidebar({ brand }: { brand: BrandSettings }) {
               >
                 <DropdownMenuItem onClick={() => router.push('/affiliate/settings')}>
                   <Settings className="mr-2 h-4 w-4" />
-                  Settings
+                  {t('settings')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Log out
+                  {t('logout')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -192,6 +197,7 @@ function AffiliateSidebar({ brand }: { brand: BrandSettings }) {
 
 export default function AffiliateLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { t } = useI18n();
   const [brand, setBrand] = useState<BrandSettings>({});
 
   useEffect(() => {
@@ -244,10 +250,11 @@ export default function AffiliateLayout({ children }: { children: React.ReactNod
           <div className="flex flex-1 items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">
-                Welcome back, {user.name?.split(' ')[0]}
+                {t('welcomeBack', { name: user.name?.split(' ')[0] || '' })}
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <LanguageSwitcher />
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-4 w-4" />
               </Button>

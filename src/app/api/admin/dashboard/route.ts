@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { applyFractionToMoney, readMinorAmount } from '@/lib/currency';
 
 
 export async function GET(request: NextRequest) {
@@ -62,8 +63,8 @@ export async function GET(request: NextRequest) {
     
     referrals.forEach((ref) => {
       const metadata = ref.metadata as any;
-      const estimatedValue = Number(metadata?.estimated_value) || 0;
-      const valueInCents = estimatedValue * 100;
+      const valueInCents = readMinorAmount(metadata, 'estimated_value_minor', 'estimated_value');
+      if (valueInCents === null) return;
       
       // Get commission rate from partner group or default to 20%
       const affiliate = ref.affiliate as any;
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
       const commissionRate = partnerGroupId 
         ? (partnerGroupMap.get(partnerGroupId) || 0.20)
         : 0.20;
-      const commissionInCents = Math.floor(valueInCents * commissionRate);
+      const commissionInCents = applyFractionToMoney(valueInCents, commissionRate);
       
       totalEstimatedRevenue += valueInCents;
       totalEstimatedCommission += commissionInCents;

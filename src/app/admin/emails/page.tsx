@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatDateEAT } from '@/lib/date';
 import {
   Card,
   CardContent,
@@ -443,7 +444,7 @@ export default function EmailsPage() {
                     <TableCell className="text-sm">{t.sentCount}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {t.lastSent
-                        ? new Date(t.lastSent).toLocaleDateString('en-IN', {
+                        ? formatDateEAT(t.lastSent, {
                             day: 'numeric',
                             month: 'short',
                           })

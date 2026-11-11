@@ -1,0 +1,12 @@
+{
+  "name": "GanjiLink",
+  "short_name": "GanjiLink",
+  "description": "Share products and services and track qualifying referrals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    { "src": "/icons/ganjilink.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

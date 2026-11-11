@@ -1,11 +1,16 @@
 import React from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { db } from '@/lib/prisma';
+import { I18nProvider } from '@/i18n/provider';
+import { BRAND_NAME } from '@/lib/brand';
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import './globals.css';
 
 export const metadata = {
-  title: 'Refferq - Modern Affiliate Marketing Platform',
-  description: 'Next-generation affiliate marketing platform with comprehensive tracking, commission management, and payout automation.',
+  title: `${BRAND_NAME} - Referral Platform`,
+  description: 'Share products and services you value, and track qualifying referrals.',
+  manifest: '/manifest.webmanifest',
+  themeColor: '#2563eb',
 };
 
 export default async function RootLayout({
@@ -27,14 +32,15 @@ export default async function RootLayout({
   } as React.CSSProperties;
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en-KE" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </head>
       <body className="font-sans antialiased" style={dynamicStyles}>
-        {children}
+        <I18nProvider>{children}</I18nProvider>
+        <ServiceWorkerRegistration />
         <Toaster />
       </body>
     </html>

@@ -6,7 +6,10 @@ export const referralSchema = z.object({
     leadEmail: z.string().email('Invalid email address'),
     company: z.string().optional(),
     notes: z.string().optional(),
-    estimatedValue: z.number().min(0).max(999999999).optional(),
+    estimatedValue: z.preprocess(
+        (value) => value === '' || value === undefined ? undefined : String(value),
+        z.string().regex(/^\d{1,9}(?:\.\d{1,2})?$/).optional(),
+    ),
 });
 
 // Affiliate Creation Validation (Admin)

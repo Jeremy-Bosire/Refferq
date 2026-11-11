@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, prisma } from '@/lib/prisma';
+import { applyPercentToMoney, toMinorUnits } from '@/lib/currency';
 import crypto from 'crypto';
 
 // ─── Webhook Signature Verification ────────────────────────────
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     const {
       event_type,
       amount_cents,
-      currency = 'USD',
+      currency = 'KES',
       customer_email,
       attribution_key,
       referral_code,
@@ -126,13 +127,13 @@ export async function POST(request: NextRequest) {
     const commissionRules = await db.getCommissionRules();
     let applicableRule = commissionRules.find((rule: any) => rule.isDefault);
 
-    const commissionRate = applicableRule?.value || 15;
+    const commissionRate = String(applicableRule?.value ?? 15);
     let commissionAmount = 0;
 
     if (applicableRule?.type === 'PERCENTAGE' && amount_cents) {
-      commissionAmount = Math.floor((amount_cents * commissionRate) / 100);
+      commissionAmount = applyPercentToMoney(amount_cents, commissionRate);
     } else if (applicableRule?.type === 'FIXED') {
-      commissionAmount = commissionRate;
+      commissionAmount = toMinorUnits(commissionRate);
     }
 
     // ─── Commission Hold Period ─────────────────────────────────
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
         affiliateId: affiliate.id,
         userId: affiliate.userId,
         amountCents: commissionAmount,
-        rate: commissionRate,
+        rate: applicableRule?.type === 'PERCENTAGE' ? Number(commissionRate) / 100 : 0,
         status: 'PENDING',
         maturesAt,
       },

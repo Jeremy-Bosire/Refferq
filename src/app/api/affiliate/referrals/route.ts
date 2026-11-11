@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { readMinorAmount, toMinorUnits } from '@/lib/currency';
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
           company: company || '',
           notes: notes || '',
           source: 'manual',
-          estimated_value: estimatedValue || 0,
+          estimated_value_minor: estimatedValue ? toMinorUnits(estimatedValue) : 0,
         },
       }
     });
@@ -125,7 +126,7 @@ export async function GET(request: NextRequest) {
       const metadata = ref.metadata as any;
       return {
         ...ref,
-        estimatedValue: Number(metadata?.estimated_value) || 0,
+        estimatedValueMinor: readMinorAmount(metadata, 'estimated_value_minor', 'estimated_value'),
         company: metadata?.company || '',
       };
     });

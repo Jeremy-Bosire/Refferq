@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/i18n/provider';
 import {
   Card,
   CardContent,
@@ -24,7 +27,7 @@ import {
 } from '@/components/ui/tooltip';
 import {
   TrendingUp,
-  IndianRupee,
+  Banknote,
   Users,
   Target,
   Clock,
@@ -54,7 +57,7 @@ interface TopAffiliate {
   name: string;
   email: string;
   referralCode: string;
-  totalRevenue: number;
+  totalEarnings: number;
   totalReferrals: number;
 }
 
@@ -70,6 +73,7 @@ interface RecentCustomer {
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [topAffiliates, setTopAffiliates] = useState<TopAffiliate[]>([]);
@@ -139,36 +143,36 @@ export default function AdminDashboardPage() {
 
   const statCards = [
     {
-      title: 'Estimated Revenue',
-      value: `₹${stats ? (stats.totalEstimatedRevenue / 100).toFixed(2) : '0.00'}`,
-      icon: IndianRupee,
-      description: 'Total projected value',
+      title: t('estimatedRevenue'),
+      value: formatMoney(stats?.totalEstimatedRevenue || 0),
+      icon: Banknote,
+      description: t('projectedValue'),
       trend: '+12%',
       trendUp: true,
       color: 'text-blue-600',
       bg: 'bg-blue-500/10',
     },
     {
-      title: 'Confirmed Revenue',
-      value: `₹${stats ? (stats.totalRevenue / 100).toFixed(2) : '0.00'}`,
+      title: t('confirmedRevenue'),
+      value: formatMoney(stats?.totalRevenue || 0),
       icon: TrendingUp,
-      description: 'Approved transactions',
+      description: t('approvedTransactions'),
       color: 'text-emerald-600',
       bg: 'bg-emerald-500/10',
     },
     {
-      title: 'Commission Owed',
-      value: `₹${stats ? (stats.totalEstimatedCommission / 100).toFixed(2) : '0.00'}`,
+      title: t('commissionOwed'),
+      value: formatMoney(stats?.totalEstimatedCommission || 0),
       icon: Wallet,
-      description: 'Pending payouts',
+      description: t('pendingPayouts'),
       color: 'text-amber-600',
       bg: 'bg-amber-500/10',
     },
     {
-      title: 'Total Partners',
+      title: t('totalPartners'),
       value: stats?.totalAffiliates || 0,
       icon: Users,
-      description: 'Active affiliates',
+      description: t('activeAffiliates'),
       trend: '+5',
       trendUp: true,
       color: 'text-violet-600',
@@ -182,32 +186,32 @@ export default function AdminDashboardPage() {
 
   const quickActions = [
     {
-      title: 'Partners',
-      description: 'Manage affiliates',
+      title: t('partners'),
+      description: t('manageAffiliates'),
       icon: Users,
       href: '/admin/partners',
       color: 'text-blue-600',
       bg: 'bg-blue-500/10',
     },
     {
-      title: 'Customers',
-      description: 'View referrals',
+      title: t('customers'),
+      description: t('viewReferrals'),
       icon: UserCheck,
       href: '/admin/customers',
       color: 'text-emerald-600',
       bg: 'bg-emerald-500/10',
     },
     {
-      title: 'Payouts',
-      description: 'Process payments',
+      title: t('payouts'),
+      description: t('processPayments'),
       icon: CreditCard,
       href: '/admin/payouts',
       color: 'text-amber-600',
       bg: 'bg-amber-500/10',
     },
     {
-      title: 'Reports',
-      description: 'Analytics & insights',
+      title: t('reports'),
+      description: t('analyticsInsights'),
       icon: BarChart3,
       href: '/admin/reports',
       color: 'text-violet-600',
@@ -220,9 +224,9 @@ export default function AdminDashboardPage() {
       <div className="space-y-6">
         {/* Page Header */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('dashboard')}</h1>
           <p className="text-muted-foreground">
-            Overview of your affiliate program performance
+            {t('dashboardOverview')}
           </p>
         </div>
 
@@ -264,7 +268,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-2xl font-bold">{stats?.pendingReferrals || 0}</p>
-                  <p className="text-sm text-muted-foreground">Pending Leads</p>
+                  <p className="text-sm text-muted-foreground">{t('pendingLeads')}</p>
                 </div>
                 {(stats?.pendingReferrals || 0) > 0 && (
                   <Tooltip>
@@ -273,7 +277,7 @@ export default function AdminDashboardPage() {
                         <Eye className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Review pending</TooltipContent>
+                    <TooltipContent>{t('reviewPending')}</TooltipContent>
                   </Tooltip>
                 )}
               </div>
@@ -288,7 +292,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-2xl font-bold">{stats?.totalLeads || 0}</p>
-                  <p className="text-sm text-muted-foreground">Total Leads</p>
+                  <p className="text-sm text-muted-foreground">{t('totalLeads')}</p>
                 </div>
               </div>
             </CardContent>
@@ -302,10 +306,10 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-2xl font-bold">{stats?.totalReferredCustomers || 0}</p>
-                  <p className="text-sm text-muted-foreground">Conversions</p>
+                  <p className="text-sm text-muted-foreground">{t('conversions')}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-medium text-muted-foreground">Rate</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t('rate')}</p>
                   <p className="text-sm font-bold text-emerald-600">{conversionRate}%</p>
                 </div>
               </div>
@@ -345,11 +349,11 @@ export default function AdminDashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
-                <CardTitle className="text-base font-semibold">Top Partners</CardTitle>
-                <CardDescription>Best performing affiliates</CardDescription>
+                <CardTitle className="text-base font-semibold">{t('topPartners')}</CardTitle>
+                <CardDescription>{t('bestPerformingAffiliates')}</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="text-xs" onClick={() => router.push('/admin/partners')}>
-                View all
+                {t('viewAll')}
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Button>
             </CardHeader>
@@ -376,8 +380,8 @@ export default function AdminDashboardPage() {
                         <p className="text-xs text-muted-foreground font-mono">{affiliate.referralCode}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold">₹{(affiliate.totalRevenue / 100).toFixed(2)}</p>
-                        <p className="text-[11px] text-muted-foreground">{affiliate.totalReferrals} referrals</p>
+                        <p className="text-sm font-semibold">{formatMoney(affiliate.totalEarnings)}</p>
+                        <p className="text-[11px] text-muted-foreground">{t('referralsCount', { count: String(affiliate.totalReferrals) })}</p>
                       </div>
                     </div>
                   ))}
@@ -385,8 +389,8 @@ export default function AdminDashboardPage() {
               ) : (
                 <EmptyState
                   icon={Users}
-                  title="No partners yet"
-                  description="Partners will appear here once they join"
+                  title={t('noPartnersYet')}
+                  description={t('partnersAppearAfterJoin')}
                 />
               )}
             </CardContent>
@@ -396,11 +400,11 @@ export default function AdminDashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
-                <CardTitle className="text-base font-semibold">Recent Customers</CardTitle>
-                <CardDescription>Latest referred customers</CardDescription>
+                <CardTitle className="text-base font-semibold">{t('recentCustomers')}</CardTitle>
+                <CardDescription>{t('latestReferredCustomers')}</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="text-xs" onClick={() => router.push('/admin/customers')}>
-                View all
+                {t('viewAll')}
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Button>
             </CardHeader>
@@ -414,14 +418,14 @@ export default function AdminDashboardPage() {
                       className="flex items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/50"
                     >
                       <p className="text-[11px] text-muted-foreground w-12 shrink-0 text-center">
-                        {new Date(customer.createdAt).toLocaleDateString('en-US', {
+                        {formatDateEAT(customer.createdAt, {
                           month: 'short',
                           day: 'numeric',
                         })}
                       </p>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{customer.leadEmail}</p>
-                        <p className="text-xs text-muted-foreground">via {customer.affiliateName}</p>
+                        <p className="text-xs text-muted-foreground">{t('viaPartner', { name: customer.affiliateName })}</p>
                       </div>
                       <StatusBadge status={customer.status} />
                     </div>
@@ -430,8 +434,8 @@ export default function AdminDashboardPage() {
               ) : (
                 <EmptyState
                   icon={UserCheck}
-                  title="No customers yet"
-                  description="Referred customers will appear here"
+                  title={t('noCustomersYet')}
+                  description={t('referredCustomersAppear')}
                 />
               )}
             </CardContent>
@@ -443,10 +447,11 @@ export default function AdminDashboardPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useI18n();
   const config: Record<string, { variant: 'default' | 'secondary' | 'destructive'; label: string }> = {
-    APPROVED: { variant: 'default', label: 'Approved' },
-    PENDING: { variant: 'secondary', label: 'Pending' },
-    REJECTED: { variant: 'destructive', label: 'Rejected' },
+    APPROVED: { variant: 'default', label: t('approved') },
+    PENDING: { variant: 'secondary', label: t('pending') },
+    REJECTED: { variant: 'destructive', label: t('rejected') },
   };
   const { variant, label } = config[status] || { variant: 'secondary' as const, label: status };
 

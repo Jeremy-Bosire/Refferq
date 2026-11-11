@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
+import { useI18n } from '@/i18n/provider';
 import {
   Card,
   CardContent,
@@ -32,7 +35,6 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  IndianRupee,
   ArrowUpRight,
   Ban,
   Download,
@@ -52,18 +54,18 @@ interface Payout {
   processedAt: string | null;
 }
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
-  PENDING: { label: 'Pending', variant: 'secondary', icon: Clock },
-  PROCESSING: { label: 'Processing', variant: 'outline', icon: Loader2 },
-  COMPLETED: { label: 'Completed', variant: 'default', icon: CheckCircle2 },
-  FAILED: { label: 'Failed', variant: 'destructive', icon: XCircle },
+const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
+  PENDING: { variant: 'secondary', icon: Clock },
+  PROCESSING: { variant: 'outline', icon: Loader2 },
+  COMPLETED: { variant: 'default', icon: CheckCircle2 },
+  FAILED: { variant: 'destructive', icon: XCircle },
 };
 
 export default function PayoutsPage() {
+  const { t } = useI18n();
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [currencySymbol, setCurrencySymbol] = useState('₹');
 
   useEffect(() => {
     fetchPayouts();
@@ -75,7 +77,6 @@ export default function PayoutsPage() {
       const data = await res.json();
       if (data.success) {
         setPayouts(data.payouts || []);
-        setCurrencySymbol(data.currencySymbol || '₹');
       }
     } catch (error) {
       console.error('Failed to fetch payouts:', error);
@@ -129,14 +130,14 @@ export default function PayoutsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Payouts</h1>
-        <p className="text-muted-foreground">Manage partner commission payouts</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t('payouts')}</h1>
+        <p className="text-muted-foreground">{t('managePartnerPayouts')}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Payouts</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalPayouts')}</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -145,7 +146,7 @@ export default function PayoutsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pending')}</CardTitle>
             <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
@@ -154,7 +155,7 @@ export default function PayoutsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('completed')}</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -163,12 +164,12 @@ export default function PayoutsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
-            <span className="text-sm font-bold text-muted-foreground">{currencySymbol}</span>
+            <CardTitle className="text-sm font-medium">{t('totalPaid')}</CardTitle>
+            <span className="text-sm font-bold text-muted-foreground">KSh</span>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {currencySymbol}{(stats.totalPaid / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {formatMoney(stats.totalPaid)}
             </div>
           </CardContent>
         </Card>
@@ -178,24 +179,24 @@ export default function PayoutsPage() {
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Payout History</CardTitle>
-              <CardDescription>All partner payout records</CardDescription>
+              <CardTitle>{t('payoutHistory')}</CardTitle>
+              <CardDescription>{t('allPartnerPayoutRecords')}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="mr-2 h-4 w-4" />
-                Export CSV
+                {t('exportCsv')}
               </Button>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="PROCESSING">Processing</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="FAILED">Failed</SelectItem>
+                  <SelectItem value="all">{t('allStatuses')}</SelectItem>
+                  <SelectItem value="PENDING">{t('pending')}</SelectItem>
+                  <SelectItem value="PROCESSING">{t('processing')}</SelectItem>
+                  <SelectItem value="COMPLETED">{t('completed')}</SelectItem>
+                  <SelectItem value="FAILED">{t('failed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -205,20 +206,20 @@ export default function PayoutsPage() {
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Wallet className="h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-semibold">No payouts found</h3>
-              <p className="text-sm text-muted-foreground">Payouts will appear here once processed</p>
+              <h3 className="mt-4 text-lg font-semibold">{t('noPayoutsFound')}</h3>
+              <p className="text-sm text-muted-foreground">{t('payoutsAppearWhenProcessed')}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Partner</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Commissions</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Requested</TableHead>
-                  <TableHead>Processed</TableHead>
+                  <TableHead>{t('partners')}</TableHead>
+                  <TableHead>{t('amount')}</TableHead>
+                  <TableHead>{t('commissions')}</TableHead>
+                  <TableHead>{t('method')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('requested')}</TableHead>
+                  <TableHead>{t('processed')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -234,16 +235,16 @@ export default function PayoutsPage() {
                       </TableCell>
                       <TableCell>
                         <span className="font-semibold">
-                          {currencySymbol}{(payout.amountCents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatMoney(payout.amountCents)}
                         </span>
                       </TableCell>
                       <TableCell className="text-sm">{payout.commissionCount}</TableCell>
                       <TableCell className="text-sm">{payout.method || '—'}</TableCell>
                       <TableCell>
-                        <Badge variant={cfg.variant}>{cfg.label}</Badge>
+                          <Badge variant={cfg.variant}>{t(payout.status === 'PENDING' ? 'pending' : payout.status === 'PROCESSING' ? 'processing' : payout.status === 'COMPLETED' ? 'completed' : 'failed')}</Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(payout.createdAt).toLocaleDateString('en-IN', {
+                        {formatDateEAT(payout.createdAt, {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
@@ -251,7 +252,7 @@ export default function PayoutsPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {payout.processedAt
-                          ? new Date(payout.processedAt).toLocaleDateString('en-IN', {
+                          ? formatDateEAT(payout.processedAt, {
                             day: 'numeric',
                             month: 'short',
                             year: 'numeric',

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatMoney, toMinorUnits } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from '@/components/ui/card';
@@ -71,7 +73,7 @@ export default function CouponsPage() {
         code: form.code,
         description: form.description || null,
         discountType: form.discountType,
-        discountValue: parseFloat(form.discountValue),
+        discountValue: form.discountValue,
         maxUses: form.maxUses ? parseInt(form.maxUses) : null,
         affiliateId: form.affiliateId || null,
         expiresAt: form.expiresAt || null,
@@ -146,7 +148,7 @@ export default function CouponsPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const formatDate = formatDateEAT;
 
   if (loading) {
     return (
@@ -239,7 +241,7 @@ export default function CouponsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : `₹${c.discountValue}`}
+                        {c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : formatMoney(toMinorUnits(String(c.discountValue)))}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">{c.usedCount}{c.maxUses ? `/${c.maxUses}` : ''}</TableCell>
@@ -286,7 +288,7 @@ export default function CouponsPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
-                    <SelectItem value="FIXED">Fixed Amount (₹)</SelectItem>
+                    <SelectItem value="FIXED">Fixed Amount (KES)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

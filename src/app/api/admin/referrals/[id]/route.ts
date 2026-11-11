@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { applyFractionToMoney, readMinorAmount } from '@/lib/currency';
 
 
 export async function PUT(
@@ -49,7 +50,13 @@ export async function PUT(
 
     // Get estimated value from referral metadata
     const metadata = referral.metadata as Record<string, any> || {};
-    const estimatedValueCents = Number(metadata?.estimated_value) * 100 || 10000;
+    const estimatedValueCents = readMinorAmount(metadata, 'estimated_value_minor', 'estimated_value');
+    if (action === 'approve' && estimatedValueCents === null) {
+      return NextResponse.json(
+        { error: 'Referral amount needs currency review before approval' },
+        { status: 409 },
+      );
+    }
 
     const updatedReferral = await prisma.referral.update({
       where: { id: params.id },
@@ -65,7 +72,7 @@ export async function PUT(
     if (action === 'approve') {
       // Get commission rate from partner group or use default 10%
       const commissionRate = referral.affiliate.partnerGroup?.commissionRate
-        ? referral.affiliate.partnerGroup.commissionRate / 100
+        ? referral.affiliate.partnerGroup.commissionRate
         : 0.1;
 
       const conversion = await prisma.conversion.create({
@@ -73,12 +80,12 @@ export async function PUT(
           affiliateId: referral.affiliateId,
           referralId: referral.id,
           eventType: 'PURCHASE',
-          amountCents: estimatedValueCents,
+          amountCents: estimatedValueCents!,
           status: 'PENDING'
         }
       });
 
-      const commissionAmount = Math.round(estimatedValueCents * commissionRate);
+      const commissionAmount = applyFractionToMoney(estimatedValueCents!, commissionRate);
 
       await prisma.commission.create({
         data: {
@@ -158,9 +165,15 @@ export async function PATCH(
       // If approved, create conversion and commission
       if (action === 'approve') {
         const refMetadata = referral.metadata as Record<string, any> || {};
-        const estValueCents = Number(refMetadata?.estimated_value) * 100 || 10000;
+        const estValueCents = readMinorAmount(refMetadata, 'estimated_value_minor', 'estimated_value');
+        if (estValueCents === null) {
+          return NextResponse.json(
+            { error: 'Referral amount needs currency review before approval' },
+            { status: 409 },
+          );
+        }
         const commissionRate = referral.affiliate.partnerGroup?.commissionRate
-          ? referral.affiliate.partnerGroup.commissionRate / 100
+          ? referral.affiliate.partnerGroup.commissionRate
           : 0.1;
 
         const conversion = await prisma.conversion.create({
@@ -168,12 +181,12 @@ export async function PATCH(
             affiliateId: referral.affiliateId,
             referralId: referral.id,
             eventType: 'PURCHASE',
-            amountCents: estValueCents,
+          amountCents: estValueCents,
             status: 'PENDING'
           }
         });
 
-        const commissionAmount = Math.round(estValueCents * commissionRate);
+        const commissionAmount = applyFractionToMoney(estValueCents, commissionRate);
         
         await prisma.commission.create({
           data: {

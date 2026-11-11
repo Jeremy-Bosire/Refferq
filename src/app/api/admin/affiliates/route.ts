@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get currency symbol
-    const { getCurrencySymbol } = await import('@/lib/currency');
+    const { getCurrencySymbol } = await import('@/lib/currency-server');
     const currencySymbol = await getCurrencySymbol();
 
     return NextResponse.json({

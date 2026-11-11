@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/i18n/provider';
 import {
   Card,
   CardContent,
@@ -21,7 +24,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  IndianRupee,
   Clock,
   CheckCircle2,
   Ban,
@@ -43,10 +45,10 @@ interface Payout {
 
 export default function PayoutsPage() {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
-  const [currencySymbol, setCurrencySymbol] = useState('₹');
 
   useEffect(() => {
     if (!authLoading && user) fetchPayouts();
@@ -64,7 +66,6 @@ export default function PayoutsPage() {
       if (payData.success) setPayouts(payData.payouts || []);
       if (profileData.success) {
         setBalance(profileData.affiliate?.balanceCents || 0);
-        setCurrencySymbol(profileData.currencySymbol || '₹');
       }
     } catch (error) {
       console.error('Failed to fetch payouts:', error);
@@ -74,10 +75,9 @@ export default function PayoutsPage() {
   };
 
   const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+    formatDateEAT(date, { year: 'numeric', month: 'short', day: 'numeric' });
 
-  const formatCurrency = (cents: number) =>
-    `${currencySymbol}${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatCurrency = formatMoney;
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
@@ -91,7 +91,13 @@ export default function PayoutsPage() {
     return (
       <Badge variant={variant} className="gap-1 text-xs">
         <Icon className="h-3 w-3" />
-        {status}
+        {status === 'COMPLETED' || status === 'PAID'
+          ? t('approved')
+          : status === 'PENDING' || status === 'PROCESSING'
+            ? t('pending')
+            : status === 'FAILED'
+              ? t('rejected')
+              : status}
       </Badge>
     );
   };
@@ -100,12 +106,12 @@ export default function PayoutsPage() {
   const pendingPayout = payouts.filter((p) => p.status === 'PENDING').reduce((sum, p) => sum + p.amount, 0);
 
   const exportCSV = () => {
-    const headers = ['Date', 'Method', 'Status', 'Amount'];
+    const headers = [t('date'), t('method'), t('status'), t('amount')];
     const rows = payouts.map((p) => [
       formatDate(p.paidAt || p.createdAt),
       p.method,
       p.status,
-      (p.amount / 100).toFixed(2),
+      formatMoney(p.amount),
     ]);
     const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -132,13 +138,13 @@ export default function PayoutsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Payouts</h1>
-          <p className="text-muted-foreground">Track your earnings and payout history</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('payouts')}</h1>
+          <p className="text-muted-foreground">{t('payoutsTitleDescription')}</p>
         </div>
         {payouts.length > 0 && (
           <Button variant="outline" onClick={exportCSV} className="gap-1.5">
             <Download className="h-4 w-4" />
-            Export
+            {t('exportCsv')}
           </Button>
         )}
       </div>
@@ -149,11 +155,11 @@ export default function PayoutsPage() {
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
-                <span className="text-sm font-bold text-emerald-600">{currencySymbol}</span>
+                <span className="text-sm font-bold text-emerald-600">KSh</span>
               </div>
               <div>
                 <p className="text-2xl font-bold">{formatCurrency(balance)}</p>
-                <p className="text-xs text-muted-foreground">Current Balance</p>
+                <p className="text-xs text-muted-foreground">{t('currentBalance')}</p>
               </div>
             </div>
           </CardContent>
@@ -166,7 +172,7 @@ export default function PayoutsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-blue-600">{formatCurrency(totalPaid)}</p>
-                <p className="text-xs text-muted-foreground">Total Paid</p>
+                <p className="text-xs text-muted-foreground">{t('totalPaid')}</p>
               </div>
             </div>
           </CardContent>
@@ -179,7 +185,7 @@ export default function PayoutsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-amber-600">{formatCurrency(pendingPayout)}</p>
-                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-xs text-muted-foreground">{t('pending')}</p>
               </div>
             </div>
           </CardContent>
@@ -192,7 +198,7 @@ export default function PayoutsPage() {
               </div>
               <div>
                 <p className="text-lg font-bold">{payouts.length}</p>
-                <p className="text-xs text-muted-foreground">Total Payouts</p>
+                <p className="text-xs text-muted-foreground">{t('totalPayouts')}</p>
               </div>
             </div>
           </CardContent>
@@ -204,9 +210,9 @@ export default function PayoutsPage() {
         <CardContent className="flex items-start gap-3 p-4">
           <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-blue-900">Payout Schedule</p>
+            <p className="text-sm font-medium text-blue-900">{t('payoutInformation')}</p>
             <p className="text-sm text-blue-700">
-              Payouts are processed on the 1st of each month for the previous month&apos;s earnings. Minimum payout threshold is {currencySymbol}1,000.
+              {t('payoutTimingNotice')}
             </p>
           </div>
         </CardContent>
@@ -215,33 +221,35 @@ export default function PayoutsPage() {
       {/* Payout History */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Payout History</CardTitle>
-          <CardDescription>{payouts.length} payout{payouts.length !== 1 ? 's' : ''}</CardDescription>
+          <CardTitle className="text-base">{t('payoutHistory')}</CardTitle>
+          <CardDescription>{payouts.length === 1
+            ? t('payoutCountOne', { count: String(payouts.length) })
+            : t('payoutCount', { count: String(payouts.length) })}</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {payouts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Wallet className="h-12 w-12 text-muted-foreground/40 mb-3" />
-              <p className="font-medium">No payouts yet</p>
+              <p className="font-medium">{t('noPayoutsYet')}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Start referring customers to earn commissions
+                {t('referToEarn')}
               </p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>{t('date')}</TableHead>
+                  <TableHead>{t('method')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead className="text-right">{t('amount')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payouts.map((payout) => (
                   <TableRow key={payout.id}>
                     <TableCell className="text-sm">{formatDate(payout.paidAt || payout.createdAt)}</TableCell>
-                    <TableCell className="text-muted-foreground">{payout.method || 'N/A'}</TableCell>
+                    <TableCell className="text-muted-foreground">{payout.method || t('notAvailable')}</TableCell>
                     <TableCell>{getStatusBadge(payout.status)}</TableCell>
                     <TableCell className="text-right font-semibold">{formatCurrency(payout.amount)}</TableCell>
                   </TableRow>

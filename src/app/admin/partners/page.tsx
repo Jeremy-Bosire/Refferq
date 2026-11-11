@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -91,7 +93,6 @@ export default function PartnersPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currencySymbol, setCurrencySymbol] = useState('₹');
   const [sortField, setSortField] = useState<keyof Partner>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -145,7 +146,6 @@ export default function PartnersPage() {
           groupName: '',
         }));
         setPartners(formattedPartners);
-        setCurrencySymbol(data.currencySymbol || '₹');
       }
     } catch (error) {
       console.error('Failed to fetch partners:', error);
@@ -267,8 +267,8 @@ export default function PartnersPage() {
       ...partnersToExport.map((p: Partner) =>
         [
           `"${p.name}"`, p.email, p.referralCode, p.status,
-          new Date(p.createdAt).toLocaleDateString(), p.clicks, p.leads,
-          p.customers, (p.revenue / 100).toFixed(2), (p.earnings / 100).toFixed(2),
+          formatDateEAT(p.createdAt), p.clicks, p.leads,
+          p.customers, formatMoney(p.revenue), formatMoney(p.earnings),
         ].join(',')
       ),
     ].join('\n');
@@ -533,13 +533,13 @@ export default function PartnersPage() {
                       <TableCell>{partner.leads}</TableCell>
                       <TableCell>{partner.customers}</TableCell>
                       <TableCell className="text-right font-medium">
-                        {currencySymbol}{(partner.revenue / 100).toFixed(2)}
+                        {formatMoney(partner.revenue)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {currencySymbol}{(partner.earnings / 100).toFixed(2)}
+                        {formatMoney(partner.earnings)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(partner.createdAt).toLocaleDateString('en-US', {
+                        {formatDateEAT(partner.createdAt, {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',

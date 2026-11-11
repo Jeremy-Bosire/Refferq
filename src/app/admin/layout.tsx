@@ -29,6 +29,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useI18n } from '@/i18n/provider';
+import { BRAND_NAME } from '@/lib/brand';
+import type { MessageKey } from '@/i18n/messages';
 import {
   LayoutDashboard,
   Users,
@@ -51,33 +55,34 @@ import {
 } from 'lucide-react';
 
 const mainNavItems = [
-  { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
-  { title: 'Partners', url: '/admin/partners', icon: Users },
-  { title: 'Customers', url: '/admin/customers', icon: UserCheck },
-  { title: 'Payouts', url: '/admin/payouts', icon: Wallet },
-  { title: 'Invoices', url: '/admin/invoices', icon: FileText },
-  { title: 'Emails', url: '/admin/emails', icon: Mail },
+  { titleKey: 'dashboard', url: '/admin', icon: LayoutDashboard },
+  { titleKey: 'partners', url: '/admin/partners', icon: Users },
+  { titleKey: 'customers', url: '/admin/customers', icon: UserCheck },
+  { titleKey: 'payouts', url: '/admin/payouts', icon: Wallet },
+  { titleKey: 'invoices', url: '/admin/invoices', icon: FileText },
+  { titleKey: 'emails', url: '/admin/emails', icon: Mail },
 ];
 
 const marketingNavItems = [
-  { title: 'Coupons', url: '/admin/coupons', icon: Ticket },
-  { title: 'Resources', url: '/admin/resources', icon: FolderOpen },
-  { title: 'Programs', url: '/admin/programs', icon: Layers, badge: 'NEW' },
+  { titleKey: 'coupons', url: '/admin/coupons', icon: Ticket },
+  { titleKey: 'resources', url: '/admin/resources', icon: FolderOpen },
+  { titleKey: 'programs', url: '/admin/programs', icon: Layers, badge: 'NEW' },
 ];
 
 const configNavItems = [
-  { title: 'Program Settings', url: '/admin/program-settings', icon: Sliders },
-  { title: 'Team Members', url: '/admin/team', icon: UsersRound },
-  { title: 'Settings', url: '/admin/settings', icon: Settings },
-  { title: 'Reports', url: '/admin/reports', icon: BarChart3 },
-  { title: 'API Keys', url: '/admin/api-keys', icon: KeyRound },
-  { title: 'API Analytics', url: '/admin/api-analytics', icon: Activity },
+  { titleKey: 'programSettings', url: '/admin/program-settings', icon: Sliders },
+  { titleKey: 'teamMembers', url: '/admin/team', icon: UsersRound },
+  { titleKey: 'settings', url: '/admin/settings', icon: Settings },
+  { titleKey: 'reports', url: '/admin/reports', icon: BarChart3 },
+  { titleKey: 'apiKeys', url: '/admin/api-keys', icon: KeyRound },
+  { titleKey: 'apiAnalytics', url: '/admin/api-analytics', icon: Activity },
 ];
 
 function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { t } = useI18n();
 
   const isActive = (url: string) => {
     if (url === '/admin') return pathname === '/admin';
@@ -94,8 +99,8 @@ function AdminSidebar() {
                 <span className="text-lg">🎯</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-bold">Refferq</span>
-                <span className="text-xs text-muted-foreground">Admin Dashboard</span>
+                <span className="text-sm font-bold">{BRAND_NAME}</span>
+                <span className="text-xs text-muted-foreground">{t('adminDashboard')}</span>
               </div>
             </div>
           </SidebarMenuItem>
@@ -104,18 +109,18 @@ function AdminSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('mainMenu')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     isActive={isActive(item.url)}
                     onClick={() => router.push(item.url)}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey as MessageKey)}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span>{t(item.titleKey as MessageKey)}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -124,18 +129,18 @@ function AdminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Marketing</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('marketing')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {marketingNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     isActive={isActive(item.url)}
                     onClick={() => router.push(item.url)}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey as MessageKey)}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span>{t(item.titleKey as MessageKey)}</span>
                     {item.badge && (
                       <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                         {item.badge}
@@ -149,18 +154,18 @@ function AdminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Configure</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('configure')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {configNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     isActive={isActive(item.url)}
                     onClick={() => router.push(item.url)}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey as MessageKey)}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span>{t(item.titleKey as MessageKey)}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -199,12 +204,12 @@ function AdminSidebar() {
               >
                 <DropdownMenuItem onClick={() => router.push('/admin/settings')}>
                   <Settings className="mr-2 h-4 w-4" />
-                  Settings
+                  {t('settings')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Log out
+                  {t('logout')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -219,6 +224,7 @@ function AdminSidebar() {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { t } = useI18n();
 
   if (loading) {
     return (
@@ -261,10 +267,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex flex-1 items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">
-                Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user.name?.split(' ')[0]}
+                {t(new Date().getHours() < 12 ? 'goodMorning' : new Date().getHours() < 18 ? 'goodAfternoon' : 'goodEvening', { name: user.name?.split(' ')[0] || '' })}
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <LanguageSwitcher />
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-4 w-4" />
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">

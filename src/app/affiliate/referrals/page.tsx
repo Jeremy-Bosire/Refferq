@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/i18n/provider';
 import {
   Card,
   CardContent,
@@ -56,13 +59,14 @@ interface Referral {
   leadName: string;
   leadEmail: string;
   company?: string;
-  estimatedValue: number;
+  estimatedValueMinor: number | null;
   status: string;
   createdAt: string;
 }
 
 export default function ReferralsPage() {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -108,15 +112,15 @@ export default function ReferralsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        showNotification('success', 'Lead submitted successfully!');
+        showNotification('success', t('leadSubmittedShort'));
         setShowSubmitModal(false);
         setSubmitForm({ leadName: '', leadEmail: '', estimatedValue: '0' });
         fetchReferrals();
       } else {
-        showNotification('error', data.error || 'Failed to submit lead');
+        showNotification('error', data.error || t('leadSubmitFailed'));
       }
     } catch (_e) {
-      showNotification('error', 'An error occurred while submitting lead');
+      showNotification('error', t('leadSubmitFailed'));
     } finally {
       setSubmitLoading(false);
     }
@@ -128,7 +132,7 @@ export default function ReferralsPage() {
   };
 
   const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+    formatDateEAT(date, { year: 'numeric', month: 'short', day: 'numeric' });
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
@@ -140,7 +144,7 @@ export default function ReferralsPage() {
     return (
       <Badge variant={variant} className="gap-1 text-xs">
         <Icon className="h-3 w-3" />
-        {status}
+        {status === 'APPROVED' ? t('approved') : status === 'PENDING' ? t('pending') : status === 'REJECTED' ? t('rejected') : status}
       </Badge>
     );
   };
@@ -162,13 +166,13 @@ export default function ReferralsPage() {
   };
 
   const exportCSV = () => {
-    const headers = ['Name', 'Email', 'Company', 'Status', 'Value', 'Date'];
+    const headers = [t('name'), t('email'), t('company'), t('status'), t('value'), t('date')];
     const rows = filteredReferrals.map((r) => [
       r.leadName,
       r.leadEmail,
       r.company || '',
       r.status,
-      (Number(r.estimatedValue) || 0).toFixed(2),
+      r.estimatedValueMinor === null ? '' : formatMoney(r.estimatedValueMinor),
       formatDate(r.createdAt),
     ]);
     const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
@@ -204,12 +208,12 @@ export default function ReferralsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Referrals</h1>
-          <p className="text-muted-foreground">Track and manage your referral submissions</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('referrals')}</h1>
+          <p className="text-muted-foreground">{t('trackReferrals')}</p>
         </div>
         <Button onClick={() => setShowSubmitModal(true)} className="gap-1.5">
           <Plus className="h-4 w-4" />
-          Submit Lead
+          {t('submitLead')}
         </Button>
       </div>
 
@@ -217,25 +221,25 @@ export default function ReferralsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Total</p>
+            <p className="text-sm text-muted-foreground">{t('total')}</p>
             <p className="text-2xl font-bold">{stats.total}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Pending</p>
+            <p className="text-sm text-muted-foreground">{t('pending')}</p>
             <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Approved</p>
+            <p className="text-sm text-muted-foreground">{t('approved')}</p>
             <p className="text-2xl font-bold text-emerald-600">{stats.approved}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Rejected</p>
+            <p className="text-sm text-muted-foreground">{t('rejected')}</p>
             <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
           </CardContent>
         </Card>
@@ -246,7 +250,7 @@ export default function ReferralsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name or email..."
+            placeholder={t('searchNameEmail')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -258,15 +262,15 @@ export default function ReferralsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Status</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="APPROVED">Approved</SelectItem>
-            <SelectItem value="REJECTED">Rejected</SelectItem>
+            <SelectItem value="ALL">{t('allStatuses')}</SelectItem>
+            <SelectItem value="PENDING">{t('pending')}</SelectItem>
+            <SelectItem value="APPROVED">{t('approved')}</SelectItem>
+            <SelectItem value="REJECTED">{t('rejected')}</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={exportCSV} className="gap-1.5">
           <Download className="h-4 w-4" />
-          Export CSV
+          {t('exportCsv')}
         </Button>
       </div>
 
@@ -276,24 +280,24 @@ export default function ReferralsPage() {
           {filteredReferrals.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Users className="h-12 w-12 text-muted-foreground/40 mb-3" />
-              <p className="font-medium">No referrals found</p>
+              <p className="font-medium">{t('noReferralsFound')}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {referrals.length === 0 ? 'Start submitting leads to earn commissions' : 'Try adjusting your filters'}
+                {referrals.length === 0 ? t('startSubmittingLeads') : t('adjustFilters')}
               </p>
               {referrals.length === 0 && (
-                <Button className="mt-4" onClick={() => setShowSubmitModal(true)}>Submit your first lead</Button>
+                <Button className="mt-4" onClick={() => setShowSubmitModal(true)}>{t('submitFirstLead')}</Button>
               )}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Lead Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Est. Value</TableHead>
+                  <TableHead>{t('leadNameColumn')}</TableHead>
+                  <TableHead>{t('email')}</TableHead>
+                  <TableHead>{t('company')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('date')}</TableHead>
+                  <TableHead className="text-right">{t('estimatedValue')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -305,7 +309,7 @@ export default function ReferralsPage() {
                     <TableCell>{getStatusBadge(ref.status)}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{formatDate(ref.createdAt)}</TableCell>
                     <TableCell className="text-right font-semibold">
-                      {`\u20B9${(Number(ref.estimatedValue) || 0).toFixed(2)}`}
+                      {ref.estimatedValueMinor === null ? '—' : formatMoney(ref.estimatedValueMinor)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -319,23 +323,23 @@ export default function ReferralsPage() {
       <Dialog open={showSubmitModal} onOpenChange={setShowSubmitModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Submit Lead</DialogTitle>
+            <DialogTitle>{t('submitLeadTitle')}</DialogTitle>
             <DialogDescription>
-              Enter the details below to submit a lead.
+              {t('submitLeadDialogDescription')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitLead} className="space-y-4">
             <div className="space-y-2">
-              <Label>Lead&apos;s Name *</Label>
+              <Label>{t('leadName')} *</Label>
               <Input
                 required
                 value={submitForm.leadName}
                 onChange={(e) => setSubmitForm({ ...submitForm, leadName: e.target.value })}
-                placeholder="Full name"
+                placeholder={t('fullName')}
               />
             </div>
             <div className="space-y-2">
-              <Label>Contact Email *</Label>
+              <Label>{t('contactEmail')} *</Label>
               <Input
                 type="email"
                 required
@@ -345,7 +349,7 @@ export default function ReferralsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Estimated Deal Size (₹) *</Label>
+              <Label>{t('estimatedDealSize')} *</Label>
               <Input
                 type="number"
                 required
@@ -353,13 +357,13 @@ export default function ReferralsPage() {
                 onChange={(e) => setSubmitForm({ ...submitForm, estimatedValue: e.target.value })}
                 placeholder="0"
               />
-              <p className="text-xs text-muted-foreground">Type 0 if unsure</p>
+              <p className="text-xs text-muted-foreground">{t('enterZeroIfUnknown')}</p>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowSubmitModal(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setShowSubmitModal(false)}>{t('cancel')}</Button>
               <Button type="submit" disabled={submitLoading}>
                 {submitLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit Lead
+                {t('submitLead')}
               </Button>
             </DialogFooter>
           </form>

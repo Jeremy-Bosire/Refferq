@@ -88,7 +88,7 @@ model Conversion {
   referralId    String?          @map("referral_id")
   eventType     ConversionType   @map("event_type")
   amountCents   Int              @map("amount_cents")
-  currency      String           @default("USD")
+  currency      String           @default("KES")
   status        ConversionStatus @default(PENDING)
   eventMetadata Json             @default("{}") @map("event_metadata")
   createdAt     DateTime         @default(now()) @map("created_at")
@@ -148,7 +148,7 @@ model CommissionRule {
   id         String             @id @default(cuid())
   name       String
   type       CommissionRuleType
-  value      Float
+  value      Decimal            @db.Decimal(18, 4)
   conditions Json               @default("{}")
   isDefault  Boolean            @default(false) @map("is_default")
   isActive   Boolean            @default(true) @map("is_active")
@@ -191,7 +191,7 @@ model ProgramSettings {
   productName               String   @map("product_name")
   programName               String   @map("program_name")
   websiteUrl                String   @map("website_url")
-  currency                  String   @default("INR")
+  currency                  String   @default("KES")
   blockedCountries          Json     @default("[]") @map("blocked_countries")
   portalSubdomain           String   @map("portal_subdomain")
   termsOfService            String?  @map("terms_of_service")
@@ -550,8 +550,8 @@ model Coupon {
   code            String       @unique
   description     String?
   discountType    String       @default("PERCENTAGE") @map("discount_type") // PERCENTAGE | FIXED
-  discountValue   Float        @map("discount_value") // e.g. 20 = 20% or 20 = $20
-  currency        String       @default("INR")
+  discountValue   Decimal      @db.Decimal(18, 4) @map("discount_value") // Percent for percentage coupons; major currency units for fixed coupons.
+  currency        String       @default("KES")
   maxUses         Int?         @map("max_uses")
   usedCount       Int          @default(0) @map("used_count")
   affiliateId     String?      @map("affiliate_id") // null = program-wide
@@ -604,7 +604,7 @@ model Invoice {
   amountCents   Int           @map("amount_cents")
   taxCents      Int           @default(0) @map("tax_cents")
   totalCents    Int           @map("total_cents")
-  currency      String        @default("INR")
+  currency      String        @default("KES")
   status        InvoiceStatus @default(DRAFT)
   lineItems     Json          @default("[]") @map("line_items") // [{description, qty, unitPrice, total}]
   billingInfo   Json          @default("{}") @map("billing_info") // name, address, tax id
@@ -640,11 +640,11 @@ model Program {
   commissionRate    Float    @default(20) @map("commission_rate")
   commissionType    String   @default("PERCENTAGE") @map("commission_type")
   cookieDuration    Int      @default(30) @map("cookie_duration") // days
-  currency          String   @default("INR")
+  currency          String   @default("KES")
   isActive          Boolean  @default(true) @map("is_active")
   isDefault         Boolean  @default(false) @map("is_default")
   autoApprove       Boolean  @default(false) @map("auto_approve")
-  minPayoutCents    Int      @default(100000) @map("min_payout_cents") // 1000 INR
+  minPayoutCents    Int      @default(100000) @map("min_payout_cents") // KES 1,000 in minor units
   payoutFrequency   String   @default("MONTHLY") @map("payout_frequency")
   termsUrl          String?  @map("terms_url")
   logoUrl           String?  @map("logo_url")

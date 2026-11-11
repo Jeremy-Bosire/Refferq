@@ -1,4 +1,6 @@
 import { Resend } from 'resend';
+import { formatMoney } from './currency';
+import { formatDateEAT } from './date';
 
 // Initialize Resend with API key only when needed (server-side)
 let resendInstance: Resend | null = null;
@@ -96,7 +98,7 @@ class EmailService {
   }
 
   private async getCurrencySymbol(): Promise<string> {
-    const { getCurrencySymbol } = await import('./currency');
+    const { getCurrencySymbol } = await import('./currency-server');
     return await getCurrencySymbol();
   }
 
@@ -269,7 +271,7 @@ class EmailService {
           <p><strong>Lead Name:</strong> ${this.escapeHtml(data.leadName)}</p>
           <p><strong>Lead Email:</strong> ${this.escapeHtml(data.leadEmail)}</p>
           ${data.company ? `<p><strong>Company:</strong> ${this.escapeHtml(data.company)}</p>` : ''}
-          ${data.estimatedValue ? `<p><strong>Estimated Value:</strong> $${(data.estimatedValue / 100).toFixed(2)}</p>` : ''}
+          ${data.estimatedValue ? `<p><strong>Estimated Value:</strong> ${formatMoney(data.estimatedValue)}</p>` : ''}
         </div>
         
         <div style="text-align: center;">
@@ -317,7 +319,7 @@ class EmailService {
           <h3>Referral Details:</h3>
           <p><strong>Lead Name:</strong> ${this.escapeHtml(data.leadName)}</p>
           <p><strong>Status:</strong> ${statusText}</p>
-          ${isApproved ? `<p><strong>Commission Amount:</strong> $${(data.commissionAmount / 100).toFixed(2)}</p>` : ''}
+          ${isApproved ? `<p><strong>Commission Amount:</strong> ${formatMoney(data.commissionAmount)}</p>` : ''}
           ${data.notes ? `<p><strong>Notes:</strong> ${this.escapeHtml(data.notes)}</p>` : ''}
         </div>
         
@@ -724,11 +726,11 @@ class EmailService {
     }
   ): Promise<{ success: boolean; message: string }> {
     const symbol = await this.getCurrencySymbol();
-    const amount = (data.amountCents / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const amount = this.formatAmount(data.amountCents, symbol);
     return this.sendTemplatedEmail({
       to: affiliateEmail,
       templateType: 'PAYOUT_GENERATED',
-      fallbackSubject: `🎉 Payout Initiated: ₹${amount}`,
+      fallbackSubject: `🎉 Payout Initiated: ${amount}`,
       variables: { ...data, amount: this.formatAmount(data.amountCents, symbol), symbol },
       generateFallbackHtml: () => `
       <!DOCTYPE html>
@@ -757,7 +759,7 @@ class EmailService {
           
           <div class="amount-box">
             <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Payout Amount</div>
-            <div class="amount">₹${amount}</div>
+            <div class="amount">${amount}</div>
             <div style="margin-top: 15px;">
               <span class="status-badge">PENDING</span>
             </div>
@@ -805,8 +807,8 @@ class EmailService {
     }
   ): Promise<{ success: boolean; message: string }> {
     const symbol = await this.getCurrencySymbol();
-    const amount = (data.amountCents / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const date = new Date(data.processedAt).toLocaleDateString('en-IN', {
+    const amount = this.formatAmount(data.amountCents, symbol);
+    const date = formatDateEAT(data.processedAt, {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -814,7 +816,7 @@ class EmailService {
     return this.sendTemplatedEmail({
       to: affiliateEmail,
       templateType: 'PARTNER_PAID',
-      fallbackSubject: `✅ Payment Completed: ₹${amount} Paid!`,
+      fallbackSubject: `✅ Payment Completed: ${amount} Paid!`,
       variables: { ...data, amount: this.formatAmount(data.amountCents, symbol), date, symbol },
       generateFallbackHtml: () => `
       <!DOCTYPE html>
@@ -846,7 +848,7 @@ class EmailService {
           
           <div class="amount-box">
             <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Amount Paid</div>
-            <div class="amount">₹${amount}</div>
+            <div class="amount">${amount}</div>
             <div style="margin-top: 15px;">
               <span class="status-badge">✓ COMPLETED</span>
             </div>

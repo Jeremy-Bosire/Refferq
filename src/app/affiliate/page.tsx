@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/i18n/provider';
 import {
   Card,
   CardContent,
@@ -32,7 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  IndianRupee,
+  Banknote,
   MousePointerClick,
   Target,
   Users,
@@ -47,7 +50,6 @@ import {
   Ban,
   TrendingUp,
   ArrowRight,
-  Banknote,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -61,7 +63,6 @@ interface AffiliateStats {
   conversionRate: number;
   referralLink: string;
   referralCode: string;
-  currencySymbol: string;
   nextMaturesAt: string | null;
 }
 
@@ -70,16 +71,16 @@ interface Referral {
   leadName: string;
   leadEmail: string;
   company?: string;
-  estimatedValue: number;
+  estimatedValueMinor: number | null;
   status: string;
   createdAt: string;
 }
 
 export default function AffiliateDashboard() {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const [stats, setStats] = useState<AffiliateStats | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
-  const [currencySymbol, setCurrencySymbol] = useState('₹');
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [copied, setCopied] = useState<'link' | 'code' | null>(null);
@@ -116,11 +117,9 @@ export default function AffiliateDashboard() {
           conversionRate: data.stats?.conversionRate || 0,
           referralLink: `${window.location.origin}/r/${data.affiliate?.referralCode}`,
           referralCode: data.affiliate?.referralCode || '',
-          currencySymbol: data.currencySymbol || '₹',
           nextMaturesAt: data.stats?.nextMaturesAt || null,
         });
         setReferrals(data.referrals || []);
-        setCurrencySymbol(data.currencySymbol || '₹');
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -147,15 +146,15 @@ export default function AffiliateDashboard() {
       const data = await response.json();
 
       if (data.success) {
-        showNotification('success', 'Lead submitted successfully! Waiting for admin approval.');
+        showNotification('success', t('leadSubmitted'));
         setShowSubmitModal(false);
         setSubmitForm({ leadName: '', leadEmail: '', estimatedValue: '0' });
         loadDashboardData();
       } else {
-        showNotification('error', data.error || 'Failed to submit lead');
+        showNotification('error', data.error || t('leadSubmitFailed'));
       }
     } catch (_e) {
-      showNotification('error', 'An error occurred while submitting lead');
+      showNotification('error', t('leadSubmitFailed'));
     } finally {
       setSubmitLoading(false);
     }
@@ -168,10 +167,10 @@ export default function AffiliateDashboard() {
       if (data.success) {
         window.location.reload();
       } else {
-        showNotification('error', 'Failed to generate code: ' + data.error);
+        showNotification('error', data.error || t('codeGenerationFailed'));
       }
     } catch (_e) {
-      showNotification('error', 'Failed to generate code. Please try again.');
+      showNotification('error', t('codeGenerationFailed'));
     }
   };
 
@@ -187,10 +186,9 @@ export default function AffiliateDashboard() {
   };
 
   const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+    formatDateEAT(date, { year: 'numeric', month: 'short', day: 'numeric' });
 
-  const formatCurrency = (cents: number) =>
-    `${currencySymbol}${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatCurrency = (amountMinor: number) => formatMoney(amountMinor);
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
@@ -206,7 +204,13 @@ export default function AffiliateDashboard() {
     return (
       <Badge variant={variant} className="gap-1 text-xs">
         <Icon className="h-3 w-3" />
-        {status}
+        {status === 'APPROVED' || status === 'COMPLETED' || status === 'PAID'
+          ? t('approved')
+          : status === 'PENDING' || status === 'PROCESSING'
+            ? t('pending')
+            : status === 'REJECTED' || status === 'FAILED'
+              ? t('rejected')
+              : status}
       </Badge>
     );
   };
@@ -240,16 +244,16 @@ export default function AffiliateDashboard() {
           <CardContent className="flex items-center justify-between p-6 relative z-10">
             <div className="flex items-center gap-5">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-inner">
-                <span className="text-2xl font-bold">{currencySymbol}</span>
+                <span className="text-2xl font-bold">KSh</span>
               </div>
               <div>
-                <p className="text-sm text-white/90 font-medium tracking-wide">Earn 20% commission on all paid customers</p>
-                <p className="text-xl font-bold mt-1 tracking-tight">Start referring today and grow your wealth!</p>
+                <p className="text-sm text-white/90 font-medium tracking-wide">{t('earnOnPaidReferrals')}</p>
+                <p className="text-xl font-bold mt-1 tracking-tight">{t('shareAndGrow')}</p>
               </div>
             </div>
             <Button variant="secondary" onClick={() => setShowSubmitModal(true)} className="gap-2 hidden sm:flex bg-white text-emerald-700 hover:bg-emerald-50 border-0 shadow-md transform transition hover:scale-105 active:scale-95">
               <Plus className="h-4 w-4" />
-              Submit Lead
+              {t('submitLead')}
             </Button>
           </CardContent>
         </Card>
@@ -259,26 +263,26 @@ export default function AffiliateDashboard() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
         {[
           {
-            label: 'Available Balance',
+            label: t('availableBalance'),
             value: formatCurrency(stats?.totalEarnings || 0),
             icon: Banknote,
             color: 'text-emerald-600',
             bg: 'bg-emerald-500/10',
-            description: 'Ready for payout'
+            description: t('readyForPayout')
           },
           {
-            label: 'Pending Balance',
+            label: t('pendingBalance'),
             value: formatCurrency(stats?.pendingEarnings || 0),
             icon: Clock,
             color: 'text-amber-600',
             bg: 'bg-amber-500/10',
             description: stats?.nextMaturesAt
-              ? `Next maturity: ${new Date(stats.nextMaturesAt).toLocaleDateString()}`
-              : 'Held for refund period'
+              ? t('nextMaturity', { date: formatDateEAT(stats.nextMaturesAt) })
+              : t('heldForRefundPeriod')
           },
-          { label: 'Total Clicks', value: stats?.totalClicks || 0, icon: MousePointerClick, color: 'text-blue-600', bg: 'bg-blue-500/10' },
-          { label: 'Total Leads', value: stats?.totalLeads || 0, icon: Target, color: 'text-rose-600', bg: 'bg-rose-500/10' },
-          { label: 'Conv. Rate', value: `${stats?.conversionRate?.toFixed(1) || '0.0'}%`, icon: TrendingUp, color: 'text-violet-600', bg: 'bg-violet-500/10' },
+          { label: t('totalClicks'), value: stats?.totalClicks || 0, icon: MousePointerClick, color: 'text-blue-600', bg: 'bg-blue-500/10' },
+          { label: t('totalLeads'), value: stats?.totalLeads || 0, icon: Target, color: 'text-rose-600', bg: 'bg-rose-500/10' },
+          { label: t('conversionRate'), value: `${stats?.conversionRate?.toFixed(1) || '0.0'}%`, icon: TrendingUp, color: 'text-violet-600', bg: 'bg-violet-500/10' },
         ].map((stat, i) => (
           <motion.div
             key={i}
@@ -292,7 +296,7 @@ export default function AffiliateDashboard() {
                 <div className="flex items-center gap-4">
                   <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${stat.bg} backdrop-blur-sm transition-transform group-hover:scale-110`}>
                     {stat.icon === Banknote ? (
-                      <span className={`text-lg font-bold ${stat.color}`}>{currencySymbol}</span>
+                      <span className={`text-lg font-bold ${stat.color}`}>KSh</span>
                     ) : (
                       <stat.icon className={`h-5 w-5 ${stat.color}`} />
                     )}
@@ -318,7 +322,7 @@ export default function AffiliateDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Link className="h-4 w-4" />
-            Your Referral Links
+            {t('yourReferralLinks')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -327,18 +331,18 @@ export default function AffiliateDashboard() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted mb-4">
                 <Link className="h-6 w-6 text-muted-foreground" />
               </div>
-              <p className="font-medium">No referral code found</p>
+              <p className="font-medium">{t('noReferralCode')}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Generate your referral code to start earning commissions
+                {t('generateCodeToStart')}
               </p>
               <Button className="mt-4" onClick={handleGenerateCode}>
-                Generate Referral Code
+                {t('generateReferralCode')}
               </Button>
             </div>
           ) : (
             <>
               <div className="space-y-2">
-                <Label>Referral Link</Label>
+                <Label>{t('referralLink')}</Label>
                 <div className="flex gap-2">
                   <Input readOnly value={stats?.referralLink || ''} className="font-mono text-sm" />
                   <Button
@@ -351,7 +355,7 @@ export default function AffiliateDashboard() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Referral Code</Label>
+                <Label>{t('referralCode')}</Label>
                 <div className="flex gap-2">
                   <Input readOnly value={stats?.referralCode || ''} className="font-mono text-sm" />
                   <Button
@@ -372,29 +376,29 @@ export default function AffiliateDashboard() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-base">Recent Referrals</CardTitle>
-            <CardDescription>Latest 5 referrals</CardDescription>
+            <CardTitle className="text-base">{t('recentReferrals')}</CardTitle>
+            <CardDescription>{t('latestFiveReferrals')}</CardDescription>
           </div>
           {referrals.length > 5 && (
             <Button variant="ghost" size="sm" asChild>
               <a href="/affiliate/referrals" className="gap-1">
-                View All <ArrowRight className="h-3.5 w-3.5" />
+                {t('viewAll')} <ArrowRight className="h-3.5 w-3.5" />
               </a>
             </Button>
           )}
         </CardHeader>
         <CardContent className="p-0">
           {referrals.length === 0 ? (
-            <EmptyState icon={Users} message="No referrals yet" />
+            <EmptyState icon={Users} message={t('noReferralsYet')} />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead>{t('name')}</TableHead>
+                  <TableHead>{t('email')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('date')}</TableHead>
+                  <TableHead className="text-right">{t('value')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -405,7 +409,7 @@ export default function AffiliateDashboard() {
                     <TableCell>{getStatusBadge(ref.status)}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{formatDate(ref.createdAt)}</TableCell>
                     <TableCell className="text-right font-semibold">
-                      {`${currencySymbol}${(Number(ref.estimatedValue) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                      {ref.estimatedValueMinor === null ? '—' : formatMoney(ref.estimatedValueMinor)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -421,8 +425,8 @@ export default function AffiliateDashboard() {
           <CardContent className="p-5 flex items-center gap-3">
             <Users className="h-5 w-5 text-blue-600" />
             <div>
-              <p className="font-medium">Manage Referrals</p>
-              <p className="text-xs text-muted-foreground">View all your submissions</p>
+              <p className="font-medium">{t('manageReferrals')}</p>
+              <p className="text-xs text-muted-foreground">{t('viewYourSubmissions')}</p>
             </div>
             <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardContent>
@@ -431,8 +435,8 @@ export default function AffiliateDashboard() {
           <CardContent className="p-5 flex items-center gap-3">
             <TrendingUp className="h-5 w-5 text-emerald-600" />
             <div>
-              <p className="font-medium">View Reports</p>
-              <p className="text-xs text-muted-foreground">Analyze your performance</p>
+              <p className="font-medium">{t('viewReports')}</p>
+              <p className="text-xs text-muted-foreground">{t('analyzePerformance')}</p>
             </div>
             <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardContent>
@@ -441,8 +445,8 @@ export default function AffiliateDashboard() {
           <CardContent className="p-5 flex items-center gap-3">
             <Target className="h-5 w-5 text-violet-600" />
             <div>
-              <p className="font-medium">Resources</p>
-              <p className="text-xs text-muted-foreground">Marketing materials</p>
+              <p className="font-medium">{t('resources')}</p>
+              <p className="text-xs text-muted-foreground">{t('marketingResources')}</p>
             </div>
             <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardContent>
@@ -453,24 +457,24 @@ export default function AffiliateDashboard() {
       <Dialog open={showSubmitModal} onOpenChange={setShowSubmitModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Submit Lead</DialogTitle>
+            <DialogTitle>{t('submitLeadTitle')}</DialogTitle>
             <DialogDescription>
-              Enter the details below to submit a lead. Ensure all information is accurate for proper tracking.
+              {t('submitLeadDescription')}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmitLead} className="space-y-4">
             <div className="space-y-2">
-              <Label>Lead&apos;s Name *</Label>
+              <Label>{t('leadName')} *</Label>
               <Input
                 required
                 value={submitForm.leadName}
                 onChange={(e) => setSubmitForm({ ...submitForm, leadName: e.target.value })}
-                placeholder="Full name"
+                placeholder={t('fullName')}
               />
             </div>
             <div className="space-y-2">
-              <Label>Contact Email *</Label>
+              <Label>{t('contactEmail')} *</Label>
               <Input
                 type="email"
                 required
@@ -480,7 +484,7 @@ export default function AffiliateDashboard() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Estimated Deal Size ({currencySymbol}) *</Label>
+              <Label>{t('estimatedDealSize')} *</Label>
               <Input
                 type="number"
                 required
@@ -488,16 +492,16 @@ export default function AffiliateDashboard() {
                 onChange={(e) => setSubmitForm({ ...submitForm, estimatedValue: e.target.value })}
                 placeholder="0"
               />
-              <p className="text-xs text-muted-foreground">Type 0 if unsure</p>
+              <p className="text-xs text-muted-foreground">{t('enterZeroIfUnknown')}</p>
             </div>
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowSubmitModal(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={submitLoading}>
                 {submitLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit Lead
+                {t('submitLead')}
               </Button>
             </DialogFooter>
           </form>

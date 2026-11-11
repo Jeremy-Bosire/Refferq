@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { otpService } from '@/lib/otp';
 import { SignJWT } from 'jose';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { shouldUseSecureAuthCookie } from '@/lib/auth-cookie';
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET!
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set('auth-token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: shouldUseSecureAuthCookie(),
       sameSite: 'lax',
       maxAge: 86400, // 24 hours
       path: '/'

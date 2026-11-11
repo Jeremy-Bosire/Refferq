@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 import {
   Card,
   CardContent,
@@ -45,7 +47,7 @@ import {
   ArrowLeft,
   Users,
   Wallet,
-  IndianRupee,
+  Banknote,
   CreditCard,
   Copy,
   ExternalLink,
@@ -79,7 +81,7 @@ interface Customer {
   name: string;
   email: string;
   status: string;
-  totalPaid: number;
+  totalPaidCents: number;
   createdAt: string;
 }
 
@@ -176,7 +178,7 @@ export default function PartnerDetailPage() {
             name: r.leadName,
             email: r.leadEmail,
             status: r.status,
-            totalPaid: r.estimatedValue || 0,
+            totalPaidCents: r.estimatedValueMinor || 0,
             createdAt: r.createdAt,
           })) || [];
         setCustomers(partnerCustomers);
@@ -288,11 +290,10 @@ export default function PartnerDetailPage() {
     );
   };
 
-  const formatCurrency = (cents: number) =>
-    `\u20B9${(cents / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatCurrency = formatMoney;
 
   const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+    formatDateEAT(date, { year: 'numeric', month: 'short', day: 'numeric' });
 
   const pendingCommissions = commissions.filter((c) => c.status === 'PENDING');
   const pendingAmount = pendingCommissions.reduce((sum, c) => sum + c.amountCents, 0);
@@ -550,7 +551,7 @@ export default function PartnerDetailPage() {
                         <TableCell className="font-medium">{customer.name}</TableCell>
                         <TableCell className="text-muted-foreground">{customer.email}</TableCell>
                         <TableCell>{getStatusBadge(customer.status)}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(customer.totalPaid * 100)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(customer.totalPaidCents)}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{formatDate(customer.createdAt)}</TableCell>
                         <TableCell>
                           <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/customers/${customer.id}`)}>
@@ -614,7 +615,7 @@ export default function PartnerDetailPage() {
                 </Table>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <IndianRupee className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                  <Banknote className="h-10 w-10 text-muted-foreground/40 mb-3" />
                   <p className="text-sm font-medium text-muted-foreground">No commissions yet</p>
                 </div>
               )}

@@ -22,6 +22,7 @@ import {
 import {
   Layers, Plus, Star, Percent, Clock, Globe, Edit, Trash2,
 } from 'lucide-react';
+import { formatMoney } from '@/lib/currency';
 
 interface Program {
   id: string;
@@ -45,7 +46,7 @@ interface Program {
 
 const emptyForm = {
   name: '', slug: '', description: '', commissionRate: '20', commissionType: 'PERCENTAGE',
-  cookieDuration: '30', currency: 'INR', autoApprove: false, minPayoutCents: '100000',
+  cookieDuration: '30', currency: 'KES', autoApprove: false, minPayoutCents: '100000',
   payoutFrequency: 'MONTHLY', termsUrl: '', logoUrl: '', brandColor: '#6366f1',
 };
 
@@ -154,10 +155,8 @@ export default function ProgramsPage() {
     } catch (error) { console.error('Failed to delete program:', error); }
   };
 
-  const formatCurrency = (cents: number, currency: string = 'INR') => {
-    const symbol = currency === 'INR' ? '\u20B9' : currency === 'USD' ? '$' : currency === 'EUR' ? '\u20AC' : currency;
-    return `${symbol}${(cents / 100).toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
-  };
+  const formatCurrency = (amountMinor: number, currency = 'KES') =>
+    formatMoney(amountMinor, currency);
 
   const stats = {
     total: programs.length,
@@ -350,15 +349,13 @@ export default function ProgramsPage() {
                 <Select value={form.currency} onValueChange={v => setForm({...form, currency: v})}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="INR">INR (\u20B9)</SelectItem>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="EUR">EUR (\u20AC)</SelectItem>
-                    <SelectItem value="GBP">GBP (\u00A3)</SelectItem>
+                    <SelectItem value="KES">KES (KSh)</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label>Min Payout (cents)</Label>
+                <Label>Min Payout (minor units)</Label>
                 <Input type="number" value={form.minPayoutCents} onChange={e => setForm({...form, minPayoutCents: e.target.value})} />
               </div>
               <div className="grid gap-2">

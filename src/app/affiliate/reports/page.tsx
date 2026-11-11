@@ -28,13 +28,15 @@ import {
 } from '@/components/ui/table';
 import {
   BarChart3,
-  IndianRupee,
+  Banknote,
   TrendingUp,
   Target,
   Users,
   Download,
   Calendar,
 } from 'lucide-react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 
 interface ReportStats {
   totalEarnings: number;
@@ -98,7 +100,7 @@ export default function ReportsPage() {
           d.setMonth(d.getMonth() - i);
           const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
           months[key] = {
-            month: d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
+            month: formatDateEAT(d, { month: 'short', year: 'numeric' }),
             referrals: 0,
             conversions: 0,
             earnings: 0,
@@ -134,12 +136,11 @@ export default function ReportsPage() {
     }
   };
 
-  const formatCurrency = (cents: number) =>
-    `\u20B9${(cents / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatCurrency = formatMoney;
 
   const exportCSV = () => {
-    const headers = ['Month', 'Referrals', 'Conversions', 'Earnings (₹)'];
-    const rows = monthlyData.map((m) => [m.month, m.referrals, m.conversions, (m.earnings / 100).toFixed(2)]);
+    const headers = ['Month', 'Referrals', 'Conversions', 'Earnings (KES)'];
+    const rows = monthlyData.map((m) => [m.month, m.referrals, m.conversions, formatMoney(m.earnings)]);
     const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -195,7 +196,7 @@ export default function ReportsPage() {
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
-                <IndianRupee className="h-4 w-4 text-emerald-600" />
+                <Banknote className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalEarnings)}</p>

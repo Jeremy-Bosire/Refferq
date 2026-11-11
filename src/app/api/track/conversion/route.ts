@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { toMinorUnits } from '@/lib/currency';
 
 /**
  * POST /api/track/conversion - Track conversions/sales
@@ -116,7 +117,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create conversion record
-    const amountCents = Math.round((amount || 0) * 100);
+    const amountCents = toMinorUnits(amount || 0);
 
     const conversion = await prisma.conversion.create({
       data: {
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
         referralId: referral?.id || null,
         eventType: 'PURCHASE',
         amountCents,
-        currency: currency || 'USD',
+        currency: currency || 'KES',
         status: 'PENDING',
         eventMetadata: {
           orderId: orderId || null,

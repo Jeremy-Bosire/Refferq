@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { readMinorAmount } from '@/lib/currency';
 
 export async function GET(request: NextRequest) {
   try {
@@ -91,13 +92,13 @@ export async function GET(request: NextRequest) {
       const metadata = ref.metadata as any;
       return {
         ...ref,
-        estimatedValue: Number(metadata?.estimated_value) || 0,
+        estimatedValueMinor: readMinorAmount(metadata, 'estimated_value_minor', 'estimated_value'),
         company: metadata?.company || '',
       };
     });
 
     // Get currency symbol
-    const { getCurrencySymbol } = await import('@/lib/currency');
+    const { getCurrencySymbol } = await import('@/lib/currency-server');
     const currencySymbol = await getCurrencySymbol();
 
     return NextResponse.json({

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatDateEAT } from '@/lib/date';
+import { useI18n } from '@/i18n/provider';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from '@/components/ui/card';
@@ -36,13 +38,14 @@ interface TeamMember {
 }
 
 const ROLES = [
-  { value: 'OWNER', label: 'Owner', description: 'Full access to everything' },
-  { value: 'ADMIN', label: 'Admin', description: 'Full access except billing' },
-  { value: 'MANAGER', label: 'Manager', description: 'Manage affiliates and payouts' },
-  { value: 'VIEWER', label: 'Viewer', description: 'View-only access' },
+  { value: 'OWNER', labelKey: 'ownerRole', descriptionKey: 'ownerDescription' },
+  { value: 'ADMIN', labelKey: 'adminRole', descriptionKey: 'adminDescription' },
+  { value: 'MANAGER', labelKey: 'managerRole', descriptionKey: 'managerDescription' },
+  { value: 'VIEWER', labelKey: 'viewerRole', descriptionKey: 'viewerDescription' },
 ];
 
 export default function TeamPage() {
+  const { t } = useI18n();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -77,7 +80,7 @@ export default function TeamPage() {
         setDialogOpen(false);
         setForm({ email: '', name: '', role: 'MANAGER' });
       } else {
-        alert(data.error || 'Failed to invite member');
+        alert(t('inviteFailed'));
       }
     } catch (error) {
       console.error('Failed to invite member:', error);
@@ -100,7 +103,7 @@ export default function TeamPage() {
   };
 
   const deleteMember = async (id: string) => {
-    if (!confirm('Remove this team member?')) return;
+    if (!confirm(t('removeTeamMemberConfirm'))) return;
     try {
       await fetch(`/api/admin/team?id=${id}`, { method: 'DELETE' });
       await fetchMembers();
@@ -113,13 +116,14 @@ export default function TeamPage() {
     const map: Record<string, 'default' | 'secondary' | 'outline'> = {
       OWNER: 'default', ADMIN: 'default', MANAGER: 'secondary', VIEWER: 'outline',
     };
-    return <Badge variant={map[role] || 'outline'}>{role}</Badge>;
+    const roleKey = role === 'OWNER' ? 'ownerRole' : role === 'ADMIN' ? 'adminRole' : role === 'MANAGER' ? 'managerRole' : 'viewerRole';
+    return <Badge variant={map[role] || 'outline'}>{t(roleKey)}</Badge>;
   };
 
   const getStatusBadge = (status: string) => (
     <Badge variant={status === 'ACTIVE' ? 'default' : status === 'PENDING' ? 'secondary' : 'destructive'} className="gap-1 text-xs">
       {status === 'ACTIVE' ? <UserCheck className="h-3 w-3" /> : status === 'PENDING' ? <Mail className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
-      {status}
+      {status === 'ACTIVE' ? t('active') : status === 'PENDING' ? t('pending') : status}
     </Badge>
   );
 
@@ -144,40 +148,40 @@ export default function TeamPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Team Members</h1>
-          <p className="text-muted-foreground">Manage who has access to your admin dashboard</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('teamMembers')}</h1>
+          <p className="text-muted-foreground">{t('manageAdminAccess')}</p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
-          Invite Member
+          {t('inviteMember')}
         </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalMembers')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.total}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('active')}</CardTitle>
             <UserCheck className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.active}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pending Invites</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pendingInvites')}</CardTitle>
             <Mail className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.pending}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Admins</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admins')}</CardTitle>
             <Shield className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{stats.admins}</div></CardContent>
@@ -186,26 +190,26 @@ export default function TeamPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Members</CardTitle>
-          <CardDescription>People with access to the admin dashboard</CardDescription>
+          <CardTitle>{t('allMembers')}</CardTitle>
+          <CardDescription>{t('adminAccessMembers')}</CardDescription>
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Users className="h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-semibold">No team members</h3>
-              <p className="text-sm text-muted-foreground">Invite your first team member</p>
+              <h3 className="mt-4 text-lg font-semibold">{t('noTeamMembers')}</h3>
+              <p className="text-sm text-muted-foreground">{t('inviteFirstMember')}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('name')}</TableHead>
+                  <TableHead>{t('email')}</TableHead>
+                  <TableHead>{t('role')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('joined')}</TableHead>
+                  <TableHead className="text-right">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -216,18 +220,18 @@ export default function TeamPage() {
                     <TableCell>{getRoleBadge(member.role)}</TableCell>
                     <TableCell>{getStatusBadge(member.status)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(member.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatDateEAT(member.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         {member.status === 'PENDING' && (
                           <Button variant="ghost" size="sm" onClick={() => updateMember(member.id, { status: 'ACTIVE' })}>
-                            Activate
+                            {t('activate')}
                           </Button>
                         )}
                         {member.status === 'ACTIVE' && member.role !== 'OWNER' && (
                           <Button variant="ghost" size="sm" onClick={() => updateMember(member.id, { status: 'DEACTIVATED' })}>
-                            Deactivate
+                            {t('deactivate')}
                           </Button>
                         )}
                         {member.role !== 'OWNER' && (
@@ -249,28 +253,28 @@ export default function TeamPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite Team Member</DialogTitle>
-            <DialogDescription>Send an invitation to join your admin team</DialogDescription>
+            <DialogTitle>{t('inviteTeamMember')}</DialogTitle>
+            <DialogDescription>{t('invitationAdminTeam')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Name *</Label>
+              <Label>{t('name')} *</Label>
               <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="John Doe" />
             </div>
             <div className="grid gap-2">
-              <Label>Email *</Label>
+              <Label>{t('email')} *</Label>
               <Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="john@example.com" />
             </div>
             <div className="grid gap-2">
-              <Label>Role</Label>
+              <Label>{t('role')}</Label>
               <Select value={form.role} onValueChange={v => setForm({...form, role: v})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ROLES.map(role => (
                     <SelectItem key={role.value} value={role.value}>
                       <div>
-                        <span className="font-medium">{role.label}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">{role.description}</span>
+                        <span className="font-medium">{t(role.labelKey as 'ownerRole' | 'adminRole' | 'managerRole' | 'viewerRole')}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{t(role.descriptionKey as 'ownerDescription' | 'adminDescription' | 'managerDescription' | 'viewerDescription')}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -279,9 +283,9 @@ export default function TeamPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('cancel')}</Button>
             <Button onClick={handleInvite} disabled={saving || !form.email || !form.name}>
-              {saving ? 'Inviting...' : 'Send Invite'}
+              {saving ? t('sendingInvite') : t('sendInvite')}
             </Button>
           </DialogFooter>
         </DialogContent>

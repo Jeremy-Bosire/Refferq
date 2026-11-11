@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatDateEAT } from '@/lib/date';
+import { useI18n } from '@/i18n/provider';
 import {
   Card,
   CardContent,
@@ -31,6 +33,7 @@ interface AdminProfile {
 }
 
 export default function SettingsPage() {
+  const { t } = useI18n();
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -92,8 +95,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and preferences</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t('settings')}</h1>
+        <p className="text-muted-foreground">{t('accountPreferences')}</p>
       </div>
 
       {/* Profile Settings */}
@@ -103,20 +106,20 @@ export default function SettingsPage() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Profile
+                {t('profile')}
               </CardTitle>
-              <CardDescription>Your personal account information</CardDescription>
+              <CardDescription>{t('personalAccountInfo')}</CardDescription>
             </div>
             <Button onClick={handleSave} disabled={saving}>
               {saved ? (
                 <>
                   <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                  Saved
+                  {t('saved')}
                 </>
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? t('saving') : t('save')}
                 </>
               )}
             </Button>
@@ -125,7 +128,7 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">{t('fullName')}</Label>
               <Input
                 id="name"
                 value={name}
@@ -133,7 +136,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">{t('emailAddress')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -150,32 +153,32 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Account Details
+            {t('accountDetails')}
           </CardTitle>
-          <CardDescription>Read-only account information</CardDescription>
+          <CardDescription>{t('readOnlyAccountInfo')}</CardDescription>
         </CardHeader>
         <CardContent>
           {profile && (
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
-                  <p className="text-sm font-medium">Role</p>
-                  <p className="text-sm text-muted-foreground">{profile.role}</p>
+                  <p className="text-sm font-medium">{t('role')}</p>
+                  <p className="text-sm text-muted-foreground">{profile.role === 'ADMIN' ? t('adminRole') : profile.role}</p>
                 </div>
                 <Shield className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
-                  <p className="text-sm font-medium">Status</p>
-                  <p className="text-sm text-muted-foreground">{profile.status}</p>
+                  <p className="text-sm font-medium">{t('status')}</p>
+                  <p className="text-sm text-muted-foreground">{profile.status === 'ACTIVE' ? t('active') : profile.status}</p>
                 </div>
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
-                  <p className="text-sm font-medium">Account Created</p>
+                  <p className="text-sm font-medium">{t('accountCreatedLabel')}</p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(profile.createdAt).toLocaleDateString('en-IN', {
+                    {formatDateEAT(profile.createdAt, {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',
@@ -194,14 +197,13 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="h-5 w-5" />
-            Security
+            {t('security')}
           </CardTitle>
-          <CardDescription>Authentication is managed via OTP</CardDescription>
+          <CardDescription>{t('otpSecurityDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            This platform uses passwordless OTP-based authentication. A one-time code is sent to your
-            email each time you log in. No password management is required.
+            {t('passwordlessInfo')}
           </p>
         </CardContent>
       </Card>

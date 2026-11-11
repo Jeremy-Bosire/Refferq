@@ -194,7 +194,7 @@ export class DatabaseService {
         referralId: conversionData.referralId,
         eventType: conversionData.eventType,
         amountCents: conversionData.amountCents,
-        currency: conversionData.currency || 'USD',
+        currency: conversionData.currency || 'KES',
         eventMetadata: conversionData.eventMetadata || {},
         status: 'PENDING',
       },
@@ -267,12 +267,12 @@ export class DatabaseService {
   async createCommissionRule(ruleData: {
     name: string;
     type: 'PERCENTAGE' | 'FIXED';
-    value: number;
+    value: number | string;
     conditions?: any;
     isDefault?: boolean;
   }) {
     return await prisma.commissionRule.create({
-      data: ruleData,
+      data: { ...ruleData, value: String(ruleData.value) },
     });
   }
 
@@ -565,7 +565,7 @@ export class DatabaseService {
         metadata: {
           company: 'TechCorp',
           notes: 'Enterprise client, high value lead',
-          estimatedValue: 150000,
+          estimated_value_minor: 15000000,
         },
       });
 
@@ -576,7 +576,7 @@ export class DatabaseService {
         metadata: {
           company: 'StartupXYZ',
           notes: 'Interested in premium plan',
-          estimatedValue: 80000,
+          estimated_value_minor: 8000000,
         },
       });
 
@@ -592,7 +592,7 @@ export class DatabaseService {
       const conversion = await this.createConversion({
         affiliateId: affiliate1.id,
         eventType: 'PURCHASE',
-        amountCents: 225000, // $2250
+        amountCents: 225000, // KES 2,250 in minor units
         eventMetadata: {
           customerId: 'cust_abc123',
           productId: 'prod_enterprise',
@@ -605,7 +605,7 @@ export class DatabaseService {
         conversionId: conversion.id,
         affiliateId: affiliate1.id,
         userId: affiliate1User.id,
-        amountCents: 33750, // 15% of $2250
+        amountCents: 33750, // 15% of KES 2,250
         rate: 15,
         approvedBy: adminUser.id,
       });

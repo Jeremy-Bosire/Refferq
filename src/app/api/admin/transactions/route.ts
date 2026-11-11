@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { applyFractionToMoney, toMinorUnits } from '@/lib/currency';
 
 
 // GET - Fetch all transactions (Admin only)
@@ -167,8 +168,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate commission
-    const amountCents = Math.floor(Number(amount) * 100);
-    const commissionCents = Math.floor(amountCents * commissionRate);
+    const amountCents = toMinorUnits(amount);
+    const commissionCents = applyFractionToMoney(amountCents, commissionRate);
 
     // Create transaction
     const transaction = await (prisma as any).transaction.create({
@@ -198,7 +199,7 @@ export async function POST(request: NextRequest) {
         eventType: 'PURCHASE',
         amountCents,
         status: 'APPROVED',
-        currency: 'INR',
+        currency: 'KES',
         eventMetadata: {
           transactionId: transaction.id,
           commissionCents,

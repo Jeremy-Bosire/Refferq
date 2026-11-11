@@ -6,6 +6,8 @@ export * from './ModernUI';
 // Additional specialized components for admin dashboard
 
 import React from 'react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 import { motion } from 'framer-motion';
 
 // ============================================
@@ -15,7 +17,7 @@ import { motion } from 'framer-motion';
 export const RevenueCard = ({
   title,
   amount,
-  currency = '$',
+  currency = 'KES',
   subtitle,
   icon,
   trend,
@@ -60,7 +62,7 @@ export const RevenueCard = ({
 
         <div className="mb-2">
           <span className="text-4xl font-bold">
-            {currency}{(amount / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatMoney(amount, currency)}
           </span>
         </div>
 
@@ -182,7 +184,7 @@ export const PartnerRow = ({
 
       <div className="text-right px-4">
         <div className="text-xs text-gray-500 mb-1">Revenue</div>
-        <div className="font-bold text-gray-900">₹{(revenue / 100).toFixed(2)}</div>
+        <div className="font-bold text-gray-900">{formatMoney(revenue)}</div>
       </div>
 
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${style.bg} ${style.text}`}>
@@ -227,12 +229,12 @@ export const CustomerRow = ({
       className="grid grid-cols-5 gap-4 items-center p-4 rounded-xl cursor-pointer transition-all border-b border-gray-100 last:border-0"
     >
       <div className="text-sm text-gray-600">
-        {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        {formatDateEAT(date, { month: 'short', day: 'numeric', year: 'numeric' })}
       </div>
       <div className="text-gray-900 font-medium truncate">{email}</div>
       <div className="text-gray-600 truncate">{partner}</div>
       <div className="font-semibold text-gray-900">
-        {amount !== undefined ? `₹${(amount / 100).toFixed(2)}` : '-'}
+        {amount !== undefined ? formatMoney(amount) : '-'}
       </div>
       <div className="flex justify-end">
         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${style.bg} ${style.text}`}>

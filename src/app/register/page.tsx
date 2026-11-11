@@ -21,11 +21,15 @@ import {
   InputOTPSeparator,
 } from '@/components/ui/input-otp';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useI18n } from '@/i18n/provider';
+import { BRAND_NAME } from '@/lib/brand';
 import { Target, User, Mail, ShieldCheck, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 
 type Step = 'details' | 'otp' | 'success';
 
 export default function RegisterPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [step, setStep] = useState<Step>('details');
   const [name, setName] = useState('');
@@ -51,7 +55,7 @@ export default function RegisterPage() {
       const registerData = await registerRes.json();
 
       if (!registerRes.ok) {
-        setError(registerData.message || 'Registration failed');
+        setError(registerData.message || t('requestFailed'));
         setLoading(false);
         return;
       }
@@ -67,14 +71,14 @@ export default function RegisterPage() {
 
       if (otpRes.ok) {
         setStep('otp');
-        setMessage('Account created! A verification code has been sent to your email.');
+        setMessage(t('registerCodeSent', { email }));
       } else {
         // Registration succeeded but OTP failed - still move to OTP step
         setStep('otp');
-        setError(otpData.error || 'Failed to send code. Try resending.');
+        setError(otpData.error || t('requestFailed'));
       }
     } catch (_e) {
-      setError('Something went wrong. Please try again.');
+      setError(t('requestFailed'));
     } finally {
       setLoading(false);
     }
@@ -83,7 +87,7 @@ export default function RegisterPage() {
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.length < 6) {
-      setError('Please enter the full 6-digit code');
+      setError(t('invalidCodeLength'));
       return;
     }
     setError('');
@@ -111,10 +115,10 @@ export default function RegisterPage() {
           }
         }, 2000);
       } else {
-        setError(data.error || 'Invalid verification code');
+        setError(data.error || t('invalidCode'));
       }
     } catch (_e) {
-      setError('Verification failed. Please try again.');
+      setError(t('requestFailed'));
     } finally {
       setLoading(false);
     }
@@ -133,12 +137,12 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        setMessage('A new verification code has been sent.');
+        setMessage(t('loginCodeSent', { email }));
       } else {
-        setError('Failed to resend code. Please try again.');
+        setError(t('requestFailed'));
       }
     } catch (_e) {
-      setError('Failed to resend code.');
+      setError(t('requestFailed'));
     } finally {
       setLoading(false);
     }
@@ -152,10 +156,11 @@ export default function RegisterPage() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
             <Target className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Refferq</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{BRAND_NAME}</h1>
           <p className="text-sm text-muted-foreground">
-            Affiliate Marketing Platform
+            {t('productDescriptor')}
           </p>
+          <div className="flex justify-center pt-2"><LanguageSwitcher /></div>
         </div>
 
         {/* Card */}
@@ -163,9 +168,9 @@ export default function RegisterPage() {
           {step === 'details' && (
             <>
               <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl">Create your account</CardTitle>
+                <CardTitle className="text-xl">{t('createAccount')}</CardTitle>
                 <CardDescription>
-                  Join as an affiliate partner and start earning
+                  {t('joinAsPartner')}
                 </CardDescription>
               </CardHeader>
               <form onSubmit={handleRegister}>
@@ -176,13 +181,13 @@ export default function RegisterPage() {
                     </Alert>
                   )}
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="name">{t('fullName')}</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="name"
                         type="text"
-                        placeholder="Your name"
+                        placeholder={t('namePlaceholder')}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className="pl-10"
@@ -193,13 +198,13 @@ export default function RegisterPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email address</Label>
+                    <Label htmlFor="email">{t('emailAddress')}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="email"
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder={t('emailPlaceholder')}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="pl-10"
@@ -219,7 +224,7 @@ export default function RegisterPage() {
                     {loading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {loading ? 'Creating account...' : 'Create Account'}
+                    {loading ? t('creatingAccount') : t('createAccountButton')}
                   </Button>
                 </CardFooter>
               </form>
@@ -232,9 +237,9 @@ export default function RegisterPage() {
                 <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                   <ShieldCheck className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle className="text-xl">Verify your email</CardTitle>
+                <CardTitle className="text-xl">{t('verifyEmail')}</CardTitle>
                 <CardDescription>
-                  Enter the 6-digit code sent to <span className="font-medium text-foreground">{email}</span>
+                  {t('registerCodeSent', { email })}
                 </CardDescription>
               </CardHeader>
               <form onSubmit={handleVerifyOTP}>
@@ -281,7 +286,7 @@ export default function RegisterPage() {
                     ) : (
                       <ShieldCheck className="mr-2 h-4 w-4" />
                     )}
-                    {loading ? 'Verifying...' : 'Verify & Continue'}
+                    {loading ? t('verifyingCode') : t('verifyAndContinue')}
                   </Button>
                   <div className="flex items-center justify-between w-full">
                     <Button
@@ -296,7 +301,7 @@ export default function RegisterPage() {
                       }}
                     >
                       <ArrowLeft className="mr-1 h-3 w-3" />
-                      Back
+                      {t('back')}
                     </Button>
                     <Button
                       type="button"
@@ -305,7 +310,7 @@ export default function RegisterPage() {
                       onClick={handleResendOTP}
                       disabled={loading}
                     >
-                      Resend code
+                      {t('resendCode')}
                     </Button>
                   </div>
                 </CardFooter>
@@ -320,9 +325,9 @@ export default function RegisterPage() {
                   <CheckCircle2 className="h-8 w-8 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">Welcome aboard, {name}!</h3>
+                  <h3 className="text-lg font-semibold">{t('welcomeName', { name })}</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Your account has been created. Redirecting to your dashboard...
+                    {t('accountCreated')}
                   </p>
                 </div>
                 <div className="flex justify-center">
@@ -336,9 +341,9 @@ export default function RegisterPage() {
         {/* Footer */}
         {step !== 'success' && (
           <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            {t('alreadyAccount')}{' '}
             <Link href="/login" className="font-medium text-primary hover:underline">
-              Sign in
+              {t('signIn')}
             </Link>
           </p>
         )}

@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatMoney } from '@/lib/currency';
+import { formatDateEAT } from '@/lib/date';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/i18n/provider';
 import {
   Card,
   CardContent,
@@ -40,7 +43,7 @@ import {
   Building2,
   Mail,
   Phone,
-  IndianRupee,
+  Banknote,
   Eye,
 } from 'lucide-react';
 
@@ -52,7 +55,7 @@ interface Referral {
   status: string;
   notes: string | null;
   createdAt: string;
-  estimatedValue: number;
+  estimatedValueMinor: number | null;
   company: string;
   affiliate: {
     id: string;
@@ -64,14 +67,15 @@ interface Referral {
   };
 }
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  PENDING: { label: 'Pending', variant: 'secondary' },
-  APPROVED: { label: 'Approved', variant: 'default' },
-  REJECTED: { label: 'Rejected', variant: 'destructive' },
+const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  PENDING: { variant: 'secondary' },
+  APPROVED: { variant: 'default' },
+  REJECTED: { variant: 'destructive' },
 };
 
 export default function CustomersPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,15 +152,15 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-        <p className="text-muted-foreground">Manage referral leads and customer conversions</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t('customers')}</h1>
+        <p className="text-muted-foreground">{t('manageReferralLeads')}</p>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalLeads')}</CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -165,7 +169,7 @@ export default function CustomersPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('pending')}</CardTitle>
             <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
@@ -174,7 +178,7 @@ export default function CustomersPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('approved')}</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -183,7 +187,7 @@ export default function CustomersPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('rejected')}</CardTitle>
             <XCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
@@ -197,14 +201,14 @@ export default function CustomersPage() {
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>All Leads</CardTitle>
-              <CardDescription>Review and manage referral leads from your partners</CardDescription>
+              <CardTitle>{t('allLeads')}</CardTitle>
+              <CardDescription>{t('reviewPartnerLeads')}</CardDescription>
             </div>
             <div className="flex gap-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search leads..."
+                  placeholder={t('searchLeads')}
                   className="pl-8 w-64"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -212,13 +216,13 @@ export default function CustomersPage() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="APPROVED">Approved</SelectItem>
-                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                  <SelectItem value="all">{t('allStatuses')}</SelectItem>
+                  <SelectItem value="PENDING">{t('pending')}</SelectItem>
+                  <SelectItem value="APPROVED">{t('approved')}</SelectItem>
+                  <SelectItem value="REJECTED">{t('rejected')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -228,20 +232,20 @@ export default function CustomersPage() {
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <UserCheck className="h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-semibold">No leads found</h3>
-              <p className="text-sm text-muted-foreground">Leads submitted by your partners will appear here</p>
+              <h3 className="mt-4 text-lg font-semibold">{t('noLeadsFound')}</h3>
+              <p className="text-sm text-muted-foreground">{t('partnerLeadsAppear')}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Lead</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Referred By</TableHead>
-                  <TableHead>Est. Value</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('lead')}</TableHead>
+                  <TableHead>{t('company')}</TableHead>
+                  <TableHead>{t('referredBy')}</TableHead>
+                  <TableHead>{t('estimatedValue')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('date')}</TableHead>
+                  <TableHead className="text-right">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -287,17 +291,17 @@ export default function CustomersPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm font-medium">
-                        <IndianRupee className="h-3.5 w-3.5" />
-                        {referral.estimatedValue.toLocaleString('en-IN')}
+                        <Banknote className="h-3.5 w-3.5" />
+                        {referral.estimatedValueMinor === null ? '—' : formatMoney(referral.estimatedValueMinor)}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusConfig[referral.status]?.variant || 'outline'}>
-                        {statusConfig[referral.status]?.label || referral.status}
+                        {referral.status === 'PENDING' ? t('pending') : referral.status === 'APPROVED' ? t('approved') : referral.status === 'REJECTED' ? t('rejected') : referral.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(referral.createdAt).toLocaleDateString('en-IN', {
+                      {formatDateEAT(referral.createdAt, {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
@@ -311,7 +315,7 @@ export default function CustomersPage() {
                           onClick={() => router.push(`/admin/customers/${referral.id}`)}
                         >
                           <Eye className="mr-1 h-3.5 w-3.5" />
-                          View
+                          {t('view')}
                         </Button>
                         {referral.status === 'PENDING' && (
                           <>
@@ -322,7 +326,7 @@ export default function CustomersPage() {
                               disabled={actionLoading === referral.id}
                             >
                               <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                              Approve
+                              {t('approve')}
                             </Button>
                             <Button
                               size="sm"
@@ -331,7 +335,7 @@ export default function CustomersPage() {
                               disabled={actionLoading === referral.id}
                             >
                               <XCircle className="mr-1 h-3.5 w-3.5" />
-                              Reject
+                              {t('reject')}
                             </Button>
                           </>
                         )}

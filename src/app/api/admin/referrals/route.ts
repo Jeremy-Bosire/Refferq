@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { readMinorAmount } from '@/lib/currency';
 
 
 export async function GET(request: NextRequest) {
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
           status: referral.status,
           notes: referral.notes,
           createdAt: referral.createdAt,
-          estimatedValue: Number(metadata?.estimated_value) || 0,
+          estimatedValueMinor: readMinorAmount(metadata, 'estimated_value_minor', 'estimated_value'),
           company: metadata?.company || '',
           affiliate: {
             id: affiliate.id,

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { applyFractionToMoney, formatMoney } from '@/lib/currency';
+import { formatDateEAT, formatDateTimeEAT } from '@/lib/date';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Card,
@@ -33,7 +35,7 @@ import {
   Mail,
   Phone,
   Building2,
-  IndianRupee,
+  Banknote,
   User,
   Calendar,
   CheckCircle2,
@@ -55,7 +57,7 @@ interface Referral {
   status: string;
   notes: string | null;
   createdAt: string;
-  estimatedValue: number;
+  estimatedValueMinor: number | null;
   company: string;
   affiliate: {
     id: string;
@@ -204,7 +206,9 @@ export default function CustomerDetailPage() {
 
   const cfg = statusConfig[referral.status] || statusConfig.PENDING;
   const StatusIcon = cfg.icon;
-  const estimatedCommission = Math.round(referral.estimatedValue * referral.affiliate.commissionRate);
+  const estimatedCommissionMinor = referral.estimatedValueMinor === null
+    ? null
+    : applyFractionToMoney(referral.estimatedValueMinor, referral.affiliate.commissionRate);
 
   return (
     <div className="space-y-6">
@@ -399,8 +403,8 @@ export default function CustomerDetailPage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Estimated Value</span>
                 <span className="flex items-center gap-1 font-semibold">
-                  <IndianRupee className="h-3.5 w-3.5" />
-                  {referral.estimatedValue.toLocaleString('en-IN')}
+                  <Banknote className="h-3.5 w-3.5" />
+                  {referral.estimatedValueMinor === null ? '—' : formatMoney(referral.estimatedValueMinor)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -411,8 +415,8 @@ export default function CustomerDetailPage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Est. Commission</span>
                 <span className="flex items-center gap-1 text-lg font-bold text-primary">
-                  <IndianRupee className="h-4 w-4" />
-                  {estimatedCommission.toLocaleString('en-IN')}
+                  <Banknote className="h-4 w-4" />
+                  {estimatedCommissionMinor === null ? '—' : formatMoney(estimatedCommissionMinor)}
                 </span>
               </div>
             </CardContent>
@@ -471,16 +475,13 @@ export default function CustomerDetailPage() {
                   <div>
                     <p className="text-sm font-medium">Lead Submitted</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(referral.createdAt).toLocaleDateString('en-IN', {
+                      {formatDateEAT(referral.createdAt, {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric',
                       })}
                       {' at '}
-                      {new Date(referral.createdAt).toLocaleTimeString('en-IN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatDateTimeEAT(referral.createdAt)}
                     </p>
                   </div>
                 </div>
