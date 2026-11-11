@@ -1,0 +1,3 @@
+ALTER TABLE "users"
+ADD COLUMN "country_code" TEXT NOT NULL DEFAULT 'KE',
+ADD COLUMN "county" TEXT;

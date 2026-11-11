@@ -52,6 +52,7 @@ import {
   FileText,
   UsersRound,
   Layers,
+  ShieldCheck,
 } from 'lucide-react';
 
 const mainNavItems = [
@@ -61,6 +62,8 @@ const mainNavItems = [
   { titleKey: 'payouts', url: '/admin/payouts', icon: Wallet },
   { titleKey: 'invoices', url: '/admin/invoices', icon: FileText },
   { titleKey: 'emails', url: '/admin/emails', icon: Mail },
+  { titleKey: 'kycReviews', url: '/admin/kyc', icon: ShieldCheck },
+  { titleKey: 'riskLab', url: '/admin/risk-lab', icon: Activity },
 ];
 
 const marketingNavItems = [

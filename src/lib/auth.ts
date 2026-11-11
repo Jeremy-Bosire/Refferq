@@ -17,6 +17,10 @@ export interface LoginCredentials {
 
 export interface RegisterData {
   email: string;
+  phoneEncrypted: string;
+  phoneHash: string;
+  countryCode: string;
+  county: string | null;
   password: string;
   name: string;
   role: string; // 'affiliate' or 'admin' from the form
@@ -46,6 +50,11 @@ class AuthService {
         return { success: false, message: 'User already exists with this email' };
       }
 
+      const existingPhone = await prisma.user.findUnique({ where: { phoneHash: data.phoneHash } });
+      if (existingPhone) {
+        return { success: false, message: 'A user already exists with this phone number' };
+      }
+
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 12);
 
@@ -58,6 +67,10 @@ class AuthService {
       const user = await prisma.user.create({
         data: {
           email: data.email,
+          phoneEncrypted: data.phoneEncrypted,
+          phoneHash: data.phoneHash,
+          countryCode: data.countryCode,
+          county: data.county,
           name: data.name,
           password: hashedPassword,
           role: data.role.toUpperCase() as Role,

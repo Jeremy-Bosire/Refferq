@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useI18n } from '@/i18n/provider';
 import { BRAND_NAME } from '@/lib/brand';
+import { KENYAN_COUNTIES } from '@/lib/country-config';
 import { Target, User, Mail, ShieldCheck, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 
 type Step = 'details' | 'otp' | 'success';
@@ -34,6 +35,8 @@ export default function RegisterPage() {
   const [step, setStep] = useState<Step>('details');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [county, setCounty] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,13 +52,13 @@ export default function RegisterPage() {
       const registerRes = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, role: 'AFFILIATE' }),
+        body: JSON.stringify({ email, name, phone, county, role: 'AFFILIATE' }),
       });
 
       const registerData = await registerRes.json();
 
       if (!registerRes.ok) {
-        setError(registerData.message || t('requestFailed'));
+        setError(registerData.code === 'INVALID_PHONE' ? t('invalidKenyanPhone') : registerData.code === 'INVALID_COUNTY' ? t('invalidCounty') : registerData.message || t('requestFailed'));
         setLoading(false);
         return;
       }
@@ -213,13 +216,42 @@ export default function RegisterPage() {
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">{t('phoneNumber')}</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel-national"
+                      placeholder="0712 345 678"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">{t('phoneNumberHelp')}</p>
+                    <p className="text-xs text-amber-700">{t('phoneVerificationPendingNotice')}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="county">{t('countyOptional')}</Label>
+                    <select
+                      id="county"
+                      value={county}
+                      onChange={(event) => setCounty(event.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">{t('selectCounty')}</option>
+                      {KENYAN_COUNTIES.map((countyName) => (
+                        <option key={countyName} value={countyName.trim()}>{countyName.trim()}</option>
+                      ))}
+                    </select>
+                  </div>
                 </CardContent>
                 <CardFooter className="flex-col gap-4">
                   <Button
                     type="submit"
                     className="w-full"
                     size="lg"
-                    disabled={loading || !name || !email}
+                    disabled={loading || !name || !email || !phone}
                   >
                     {loading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

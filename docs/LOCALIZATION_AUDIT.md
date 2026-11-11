@@ -63,7 +63,7 @@
 ### Stripe, blocked-country logic, and other gaps
 
 - Stripe SDK package and Stripe secret keys in `.env.example`/README are present as optional legacy configuration, but the checked package manifest does not include the Stripe SDK. Existing payout UI/schema/docs still refer to Stripe. No general country-blocking service was found beyond the `blockedCountries` setting/schema.
-- There is no wallet catalog, append-only double-entry ledger, payment collector, payout provider abstraction, budget cap, independent deposit/reward/withdrawal kill switches, reconciliation worker, KYC limit enforcement, PWA manifest/install flow, Swahili support, or compliance checklist in the current app.
+- There is no wallet catalog, append-only double-entry ledger, payment collector, payout provider abstraction, budget cap, independent deposit/reward/withdrawal kill switches, reconciliation worker, or KYC limit enforcement. A first PWA manifest/install prompt, offline shell, initial Swahili catalogue, and compliance checklist have since been added, but these are foundations rather than complete product capabilities.
 - Money appears in API forms and reporting as both integer minor units and floating-point rates/JSON; there is no database constraint that balances ledger entries because no ledger exists.
 - Phase 1 work now stores new manual referral estimates as integer `estimated_value_minor` JSON values, and reads historical major-unit estimates only when they carry an explicit `estimated_value_currency: "KES"` marker. Unmarked legacy estimates stay unconverted and are shown as unavailable; approval is blocked until their source currency is reviewed. Mixed fixed/percentage commission-rule and coupon values are moving from PostgreSQL floating point to `DECIMAL(18,4)` through an explicit migration, preserving stored values.
 - The repository had no Prisma migration history before Phase 1. The new SQL migrations are incremental changes for an already provisioned PostgreSQL schema; a proper baseline is still required for brand-new database deployments before `prisma migrate deploy` can be the standard setup path.
@@ -72,15 +72,21 @@
 
 - Shared KES-first formatting, minor-unit parsing and rate math, EAT date helpers, KES defaults for new records, and SQL migrations have been added. The localized admin and affiliate screens use these helpers for their principal money/date displays.
 - Existing monetary rows have not been converted or relabeled. Their currencies must be inventoried before historical views can safely be consolidated to KES; display existing currency where its record has one and do not apply exchange rates implicitly.
-- Verification so far: the Docker production build (including TypeScript) passes. A direct authenticated API check also returned successful responses for the admin dashboard endpoints. Full unit/integration/lint coverage remains outstanding.
+- Verification so far: Docker production build and the initial four currency/date unit tests pass. A direct authenticated API check also returned successful responses for the admin dashboard endpoints. Full financial invariant, integration, mobile E2E, Lighthouse, and lint coverage remain outstanding.
 - The audit and decisions must remain the source of truth for deferred historical-data mapping and migration-baseline work; do not claim a production migration has run merely because the image builds.
 
 ### Phase 2 progress
 
 - A lightweight in-app locale provider now supports `en-KE` and `sw-KE`, persists the selected locale in browser storage, updates the document language, and exposes a language switcher in the admin and affiliate shells and auth pages.
-- Login and registration screens, admin/affiliate navigation, account menu items, dashboard greetings, main dashboard content, affiliate referrals/payouts, and admin payouts/invoices are now in the message catalogue. API-originated error messages and most remaining secondary screens still need localization; Phase 2 is in progress, not complete.
+- Public landing and funding pages, login and registration screens, admin/affiliate navigation, account menu items, dashboard greetings, main dashboard content, affiliate referrals/payouts, and admin payouts/invoices/customers/team/settings are now represented in the message catalogue. API-originated error messages and other secondary screens still need localization; Phase 2 is in progress, not complete.
 - Swahili terms needing a native review are tracked in `docs/SWAHILI_REVIEW_NEEDED.md`.
-- The current Docker production build and TypeScript check pass after the admin payouts/invoices translation slice. `npm run lint` is configured as `next lint`, which is unavailable in the Next.js 16 runtime container (`next: not found`); the repository has no general unit-test script. Repair/replace lint tooling and add test coverage in the CI/testing phase.
+- The Docker production build performs the four current Node unit tests and Next.js TypeScript check. ESLint and the Next.js flat config are now installed; the first repository-wide run reports 167 errors and 103 warnings across 59 files. The newly added landing/PWA/settings work passes targeted linting; the full lint backlog remains open, along with financial invariant and end-to-end test coverage.
+
+### Phase 9/10/12 progress
+
+- A responsive English/Kiswahili landing page now includes four action tiles, a three-step flow, transparent capability notices, 12 FAQs, a language selector, and verified-contact placeholders. The current build explicitly says deposits, mobile-money payments, and withdrawals are unavailable.
+- `/how-we-make-money` describes current implementation limits and required operator disclosures without inventing company revenue, registration, or custody claims. FAQPage and Organization JSON-LD, domain-gated sitemap/robots routes, manifest icons, install prompt, and a navigation-only offline fallback are present.
+- Localized landing and funding-disclosure URLs/hreflang are present. Other public routes still need locale-specific URLs. Privacy/terms editing, real support and registration details, full localized email/SMS/API strings, mobile Lighthouse checks, Playwright coverage, and remaining admin/affiliate translations are still open.
 
 ## Proposed implementation and Prisma migration plan
 

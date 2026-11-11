@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { emailService } from '@/lib/email';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { normalizeKenyanMobile } from '@/lib/phone';
+import { encryptPhone, hashPhone } from '@/lib/phone-protection';
+import { isKenyanCounty } from '@/lib/country-config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,12 +21,28 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, name, role } = body;
+    const { email, name } = body;
+    const phone = typeof body.phone === 'string' ? normalizeKenyanMobile(body.phone) : null;
+    const county = body.county === '' || body.county == null ? null : body.county;
 
     // Validate required fields
     if (!email || !name) {
       return NextResponse.json(
         { success: false, message: 'Email and name are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!phone) {
+      return NextResponse.json(
+        { success: false, code: 'INVALID_PHONE', message: 'Enter a valid Kenyan mobile number' },
+        { status: 400 }
+      );
+    }
+
+    if (county !== null && !isKenyanCounty(county)) {
+      return NextResponse.json(
+        { success: false, code: 'INVALID_COUNTY', message: 'Select a county in Kenya' },
         { status: 400 }
       );
     }
@@ -44,8 +63,25 @@ export async function POST(request: NextRequest) {
     const crypto = await import('crypto');
     const randomPassword = crypto.randomBytes(24).toString('base64url');
 
+    let phoneEncrypted: string;
+    let phoneHash: string;
+    try {
+      phoneEncrypted = encryptPhone(phone);
+      phoneHash = hashPhone(phone);
+    } catch (error) {
+      console.error('Phone data protection is not configured:', error);
+      return NextResponse.json(
+        { success: false, code: 'PHONE_STORAGE_UNAVAILABLE', message: 'Registration is temporarily unavailable' },
+        { status: 503 }
+      );
+    }
+
     const result = await auth.register({
       email: email.toLowerCase().trim(),
+      phoneEncrypted,
+      phoneHash,
+      countryCode: 'KE',
+      county,
       password: randomPassword,
       name: name.trim(),
       role: userRole,

@@ -10,6 +10,23 @@ datasource db {
 model User {
   id             String       @id @default(cuid())
   email          String       @unique
+  phoneEncrypted String?      @map("phone_encrypted")
+  phoneHash      String?      @unique @map("phone_hash")
+  phoneVerifiedAt DateTime?   @map("phone_verified_at")
+  countryCode    String       @default("KE") @map("country_code")
+  county         String?
+  legalNameEncrypted String?  @map("legal_name_encrypted")
+  identityDocumentType String? @map("identity_document_type")
+  identityDocumentEncrypted String? @map("identity_document_encrypted")
+  identityDocumentHash String? @unique @map("identity_document_hash")
+  kraPinEncrypted String?     @map("kra_pin_encrypted")
+  kycStatus      KycStatus    @default(NOT_STARTED) @map("kyc_status")
+  kycSubmittedAt DateTime?    @map("kyc_submitted_at")
+  identityConsentAt DateTime? @map("identity_consent_at")
+  identityConsentVersion String? @map("identity_consent_version")
+  kycReviewedAt DateTime?    @map("kyc_reviewed_at")
+  kycReviewedBy String?      @map("kyc_reviewed_by")
+  phoneOtps      PhoneOTP[]
   name           String
   password       String
   role           Role         @default(AFFILIATE)
@@ -183,6 +200,21 @@ model OTP {
   @@index([email])
   @@index([code])
   @@map("otps")
+}
+
+model PhoneOTP {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  codeHash  String   @map("code_hash")
+  channel   String
+  expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false) @map("is_used")
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isUsed, createdAt])
+  @@map("phone_otps")
 }
 
 model ProgramSettings {
@@ -688,4 +720,11 @@ enum TeamMemberStatus {
   PENDING
   ACTIVE
   DEACTIVATED
+}
+
+enum KycStatus {
+  NOT_STARTED
+  PENDING
+  VERIFIED
+  REJECTED
 }

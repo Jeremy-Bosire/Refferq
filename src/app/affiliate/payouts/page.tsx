@@ -79,6 +79,35 @@ export default function PayoutsPage() {
 
   const formatCurrency = formatMoney;
 
+  const formatMethod = (method: string) => {
+    const normalized = method.toLowerCase().replace(/[\s-]+/g, '_');
+    const labels: Record<string, string> = {
+      bank_transfer: t('bankTransfer'),
+      bank_csv: t('bankTransfer'),
+      stripe_connect: t('stripeConnect'),
+      mpesa: t('mpesa'),
+      mpesa_b2c: t('mpesa'),
+      airtel_money: t('airtelMoney'),
+      paypal: t('paypal'),
+      wise: t('wise'),
+    };
+    return labels[normalized] || method;
+  };
+
+  const formatStatus = (status: string) => {
+    const labels: Record<string, string> = {
+      COMPLETED: t('completed'),
+      PAID: t('completed'),
+      PENDING: t('pending'),
+      PROCESSING: t('processing'),
+      FAILED: t('failed'),
+      REQUESTED: t('requested'),
+      REVERSED: t('reversed'),
+      CANCELLED: t('cancelled'),
+    };
+    return labels[status] || status;
+  };
+
   const getStatusBadge = (status: string) => {
     const map: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
       COMPLETED: { variant: 'default', icon: CheckCircle2 },
@@ -91,13 +120,7 @@ export default function PayoutsPage() {
     return (
       <Badge variant={variant} className="gap-1 text-xs">
         <Icon className="h-3 w-3" />
-        {status === 'COMPLETED' || status === 'PAID'
-          ? t('approved')
-          : status === 'PENDING' || status === 'PROCESSING'
-            ? t('pending')
-            : status === 'FAILED'
-              ? t('rejected')
-              : status}
+        {formatStatus(status)}
       </Badge>
     );
   };
@@ -109,8 +132,8 @@ export default function PayoutsPage() {
     const headers = [t('date'), t('method'), t('status'), t('amount')];
     const rows = payouts.map((p) => [
       formatDate(p.paidAt || p.createdAt),
-      p.method,
-      p.status,
+      formatMethod(p.method),
+      formatStatus(p.status),
       formatMoney(p.amount),
     ]);
     const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
@@ -249,7 +272,7 @@ export default function PayoutsPage() {
                 {payouts.map((payout) => (
                   <TableRow key={payout.id}>
                     <TableCell className="text-sm">{formatDate(payout.paidAt || payout.createdAt)}</TableCell>
-                    <TableCell className="text-muted-foreground">{payout.method || t('notAvailable')}</TableCell>
+                    <TableCell className="text-muted-foreground">{payout.method ? formatMethod(payout.method) : t('notAvailable')}</TableCell>
                     <TableCell>{getStatusBadge(payout.status)}</TableCell>
                     <TableCell className="text-right font-semibold">{formatCurrency(payout.amount)}</TableCell>
                   </TableRow>

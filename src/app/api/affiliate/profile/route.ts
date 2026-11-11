@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { readMinorAmount } from '@/lib/currency';
+import { isKenyanCounty } from '@/lib/country-config';
 
 export async function GET(request: NextRequest) {
   try {
@@ -103,11 +105,21 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      kycSubmissionEnabled: process.env.KYC_SUBMISSIONS_ENABLED === 'true'
+        && Boolean(process.env.KYC_PRIVACY_NOTICE_URL?.trim())
+        && process.env.KYC_REVIEW_WORKFLOW_ENABLED === 'true',
+      kycPrivacyNoticeUrl: process.env.KYC_PRIVACY_NOTICE_URL || null,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        kycStatus: user.kycStatus,
+        hasKycSubmission: Boolean(user.legalNameEncrypted),
+        hasPhone: Boolean(user.phoneEncrypted),
+        phoneVerified: Boolean(user.phoneVerifiedAt),
+        countryCode: user.countryCode,
+        county: user.county,
       },
       affiliate: affiliate,
       stats,
@@ -152,7 +164,14 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, company, email, country, paymentMethod, paymentEmail } = body;
+    const { name, company, email, country, paymentMethod, paymentEmail, county, countryCode } = body;
+
+    if (countryCode !== undefined && countryCode !== 'KE') {
+      return NextResponse.json({ error: 'Only Kenya is currently available.' }, { status: 400 });
+    }
+    if (county !== undefined && county !== null && county !== '' && !isKenyanCounty(county)) {
+      return NextResponse.json({ error: 'Select a county in Kenya.' }, { status: 400 });
+    }
 
     // Update user name and email if provided
     const userUpdateData: any = {};
@@ -172,6 +191,8 @@ export async function PUT(request: NextRequest) {
       }
       userUpdateData.email = email.trim().toLowerCase();
     }
+    if (countryCode !== undefined) userUpdateData.countryCode = countryCode;
+    if (county !== undefined) userUpdateData.county = county || null;
 
     if (Object.keys(userUpdateData).length > 0) {
       await prisma.user.update({
@@ -182,17 +203,21 @@ export async function PUT(request: NextRequest) {
 
     // Update affiliate payout details if provided
     if (user.affiliate) {
-      const payoutDetails: any = {};
+      const payoutDetails: Record<string, unknown> = {
+        ...((user.affiliate.payoutDetails && typeof user.affiliate.payoutDetails === 'object')
+          ? user.affiliate.payoutDetails as Record<string, unknown>
+          : {}),
+      };
 
-      if (company) payoutDetails.company = company.trim();
-      if (country) payoutDetails.country = country;
-      if (paymentMethod) payoutDetails.paymentMethod = paymentMethod;
-      if (paymentEmail) payoutDetails.paymentEmail = paymentEmail.trim();
+      if (company !== undefined) payoutDetails.company = typeof company === 'string' ? company.trim() : '';
+      if (country !== undefined) payoutDetails.country = country;
+      if (paymentMethod !== undefined) payoutDetails.paymentMethod = paymentMethod;
+      if (paymentEmail !== undefined) payoutDetails.paymentEmail = typeof paymentEmail === 'string' ? paymentEmail.trim() : '';
 
       await prisma.affiliate.update({
         where: { id: user.affiliate.id },
         data: {
-          payoutDetails: payoutDetails
+          payoutDetails: payoutDetails as Prisma.InputJsonObject,
         }
       });
     }

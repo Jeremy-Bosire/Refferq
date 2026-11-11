@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/i18n/provider';
 import {
   Card,
   CardContent,
@@ -36,7 +37,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { formatMoney } from '@/lib/currency';
-import { formatDateEAT } from '@/lib/date';
+import { getMonthKeyEAT } from '@/lib/date';
 
 interface ReportStats {
   totalEarnings: number;
@@ -55,6 +56,7 @@ interface MonthlyData {
 
 export default function ReportsPage() {
   const { user, loading: authLoading } = useAuth();
+  const { t, locale } = useI18n();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('6months');
   const [stats, setStats] = useState<ReportStats>({
@@ -66,11 +68,7 @@ export default function ReportsPage() {
   });
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
 
-  useEffect(() => {
-    if (!authLoading && user) fetchReportData();
-  }, [authLoading, user, period]);
-
-  const fetchReportData = async () => {
+  const fetchReportData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/affiliate/profile');
@@ -95,12 +93,15 @@ export default function ReportsPage() {
         // Generate monthly breakdown
         const months: Record<string, MonthlyData> = {};
         const monthCount = period === '3months' ? 3 : period === '12months' ? 12 : 6;
+        const [currentYear, currentMonth] = getMonthKeyEAT(new Date()).split('-').map(Number);
         for (let i = monthCount - 1; i >= 0; i--) {
-          const d = new Date();
-          d.setMonth(d.getMonth() - i);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const monthIndex = currentYear * 12 + currentMonth - 1 - i;
+          const year = Math.floor(monthIndex / 12);
+          const month = (monthIndex % 12) + 1;
+          const key = `${year}-${String(month).padStart(2, '0')}`;
+          const d = new Date(Date.UTC(year, month - 1, 15, 12));
           months[key] = {
-            month: formatDateEAT(d, { month: 'short', year: 'numeric' }),
+            month: new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric', timeZone: 'Africa/Nairobi' }).format(d),
             referrals: 0,
             conversions: 0,
             earnings: 0,
@@ -108,22 +109,19 @@ export default function ReportsPage() {
         }
 
         referrals.forEach((r: any) => {
-          const d = new Date(r.createdAt);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const key = getMonthKeyEAT(r.createdAt);
           if (months[key]) months[key].referrals++;
         });
 
         conversions.forEach((c: any) => {
-          const d = new Date(c.createdAt);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const key = getMonthKeyEAT(c.createdAt);
           if (months[key]) months[key].conversions++;
         });
 
         commissions
           .filter((c: any) => c.status === 'PAID')
           .forEach((c: any) => {
-            const d = new Date(c.createdAt);
-            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const key = getMonthKeyEAT(c.createdAt);
             if (months[key]) months[key].earnings += c.amountCents;
           });
 
@@ -134,12 +132,16 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [locale, period]);
+
+  useEffect(() => {
+    if (!authLoading && user) void fetchReportData();
+  }, [authLoading, user, fetchReportData]);
 
   const formatCurrency = formatMoney;
 
   const exportCSV = () => {
-    const headers = ['Month', 'Referrals', 'Conversions', 'Earnings (KES)'];
+    const headers = [t('month'), t('referrals'), t('conversions'), `${t('earnings')} (KES)`];
     const rows = monthlyData.map((m) => [m.month, m.referrals, m.conversions, formatMoney(m.earnings)]);
     const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -168,8 +170,8 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">Analyze your affiliate performance</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('reports')}</h1>
+          <p className="text-muted-foreground">{t('analyzeAffiliatePerformance')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={period} onValueChange={setPeriod}>
@@ -178,14 +180,14 @@ export default function ReportsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="3months">Last 3 months</SelectItem>
-              <SelectItem value="6months">Last 6 months</SelectItem>
-              <SelectItem value="12months">Last 12 months</SelectItem>
+              <SelectItem value="3months">{t('lastThreeMonths')}</SelectItem>
+              <SelectItem value="6months">{t('lastSixMonths')}</SelectItem>
+              <SelectItem value="12months">{t('lastTwelveMonths')}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={exportCSV} className="gap-1.5">
             <Download className="h-4 w-4" />
-            Export
+            {t('exportCsv')}
           </Button>
         </div>
       </div>
@@ -200,7 +202,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalEarnings)}</p>
-                <p className="text-xs text-muted-foreground">Total Earnings</p>
+                <p className="text-xs text-muted-foreground">{t('totalEarnings')}</p>
               </div>
             </div>
           </CardContent>
@@ -213,7 +215,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalLeads}</p>
-                <p className="text-xs text-muted-foreground">Total Leads</p>
+                <p className="text-xs text-muted-foreground">{t('totalLeads')}</p>
               </div>
             </div>
           </CardContent>
@@ -226,7 +228,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalConversions}</p>
-                <p className="text-xs text-muted-foreground">Conversions</p>
+                <p className="text-xs text-muted-foreground">{t('conversions')}</p>
               </div>
             </div>
           </CardContent>
@@ -239,7 +241,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.conversionRate.toFixed(1)}%</p>
-                <p className="text-xs text-muted-foreground">Conversion Rate</p>
+                <p className="text-xs text-muted-foreground">{t('conversionRate')}</p>
               </div>
             </div>
           </CardContent>
@@ -249,8 +251,8 @@ export default function ReportsPage() {
       {/* Earnings Chart (CSS bar chart) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Monthly Earnings</CardTitle>
-          <CardDescription>Revenue generated from your referrals</CardDescription>
+          <CardTitle className="text-base">{t('monthlyEarnings')}</CardTitle>
+          <CardDescription>{t('earningsFromReferrals')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-end gap-2 h-48">
@@ -271,16 +273,16 @@ export default function ReportsPage() {
       {/* Monthly Breakdown Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Monthly Breakdown</CardTitle>
+          <CardTitle className="text-base">{t('monthlyBreakdown')}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Month</TableHead>
-                <TableHead className="text-center">Referrals</TableHead>
-                <TableHead className="text-center">Conversions</TableHead>
-                <TableHead className="text-right">Earnings</TableHead>
+                <TableHead>{t('month')}</TableHead>
+                <TableHead className="text-center">{t('referrals')}</TableHead>
+                <TableHead className="text-center">{t('conversions')}</TableHead>
+                <TableHead className="text-right">{t('earnings')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -293,7 +295,7 @@ export default function ReportsPage() {
                 </TableRow>
               ))}
               <TableRow className="bg-muted/50 font-bold">
-                <TableCell>Total</TableCell>
+                <TableCell>{t('total')}</TableCell>
                 <TableCell className="text-center">{monthlyData.reduce((s, m) => s + m.referrals, 0)}</TableCell>
                 <TableCell className="text-center">{monthlyData.reduce((s, m) => s + m.conversions, 0)}</TableCell>
                 <TableCell className="text-right">{formatCurrency(monthlyData.reduce((s, m) => s + m.earnings, 0))}</TableCell>

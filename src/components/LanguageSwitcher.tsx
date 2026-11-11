@@ -7,10 +7,10 @@ export function LanguageSwitcher() {
 
   return (
     <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-      <span>{t('language')}</span>
+      <span className="hidden sm:inline">{t('language')}</span>
       <select
         aria-label={t('language')}
-        className="rounded-md border bg-background px-2 py-1 text-foreground"
+        className="max-w-[7.5rem] rounded-md border bg-background px-2 py-1 text-foreground"
         value={locale}
         onChange={(event) => setLocale(event.target.value as 'en-KE' | 'sw-KE')}
       >

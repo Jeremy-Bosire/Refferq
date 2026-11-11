@@ -10,8 +10,17 @@ services:
     environment:
       - DATABASE_URL=postgresql://refferq:refferq@db:5432/refferq
       - JWT_SECRET=${JWT_SECRET:-change-me-to-a-random-string-min-32-chars}
+      - PII_MASTER_KEY=${PII_MASTER_KEY:-}
+      - KYC_SUBMISSIONS_ENABLED=${KYC_SUBMISSIONS_ENABLED:-false}
+      - KYC_PRIVACY_NOTICE_URL=${KYC_PRIVACY_NOTICE_URL:-}
+      - KYC_REVIEW_WORKFLOW_ENABLED=${KYC_REVIEW_WORKFLOW_ENABLED:-false}
       - RESEND_API_KEY=${RESEND_API_KEY:-}
       - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-Refferq <onboarding@resend.dev>}
+      - SMS_PROVIDER=${SMS_PROVIDER:-none}
+      - AT_API_KEY=${AT_API_KEY:-}
+      - AT_USERNAME=${AT_USERNAME:-sandbox}
+      - AT_SENDER_ID=${AT_SENDER_ID:-}
+      - AT_ENV=${AT_ENV:-sandbox}
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     depends_on:

@@ -13,13 +13,17 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('en-KE');
+export function I18nProvider({ children, initialLocale }: { children: React.ReactNode; initialLocale?: Locale }) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale || 'en-KE');
 
   useEffect(() => {
+    if (initialLocale) {
+      window.localStorage.setItem(STORAGE_KEY, initialLocale);
+      return;
+    }
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved === 'en-KE' || saved === 'sw-KE') setLocaleState(saved);
-  }, []);
+  }, [initialLocale]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -27,6 +31,12 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const setLocale = useCallback((nextLocale: Locale) => {
     window.localStorage.setItem(STORAGE_KEY, nextLocale);
+    const [firstSegment, ...rest] = window.location.pathname.split('/').filter(Boolean);
+    if (firstSegment === 'en-KE' || firstSegment === 'sw-KE') {
+      const nextPath = `/${nextLocale}${rest.length ? `/${rest.join('/')}` : ''}`;
+      window.location.assign(`${nextPath}${window.location.search}${window.location.hash}`);
+      return;
+    }
     setLocaleState(nextLocale);
   }, []);
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import type { Viewport } from 'next';
 import { Toaster } from '@/components/ui/sonner';
 import { db } from '@/lib/prisma';
 import { I18nProvider } from '@/i18n/provider';
@@ -10,8 +11,9 @@ export const metadata = {
   title: `${BRAND_NAME} - Referral Platform`,
   description: 'Share products and services you value, and track qualifying referrals.',
   manifest: '/manifest.webmanifest',
-  themeColor: '#2563eb',
 };
+
+export const viewport: Viewport = { themeColor: '#2563eb' };
 
 export default async function RootLayout({
   children,
@@ -33,11 +35,6 @@ export default async function RootLayout({
 
   return (
     <html lang="en-KE" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-      </head>
       <body className="font-sans antialiased" style={dynamicStyles}>
         <I18nProvider>{children}</I18nProvider>
         <ServiceWorkerRegistration />
@@ -57,7 +54,8 @@ function hexToHSL(hex: string): string {
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
 
   if (max !== min) {
     const d = max - min;
